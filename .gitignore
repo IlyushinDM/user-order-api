@@ -8,6 +8,8 @@
 *.so
 *.dylib
 
+/bin/
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -17,9 +19,22 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# IDE Folders
+.vscode/
+.idea/
+
 # Go workspace file
 go.work
 go.work.sum
 
 # env file
 .env
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
