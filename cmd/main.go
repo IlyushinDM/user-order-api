@@ -1,25 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"net/http" // Пример добавления зависимости из стандартной библиотеки
-
-	"github.com/IlyushinDM/user-order-api/internal/auth" // Импорт внутреннего пакета
+	"github.com/IlyushinDM/user-order-api/internal/internal/handlers"
+	"github.com/IlyushinDM/user-order-api/internal/middleware"
+	"github.com/gin-gonic/gin"
 )
 
-func main() {
-	// Пример использования внутреннего пакета
-	user := auth.GetUser()
-	fmt.Printf("Default user: %s\n", user)
+func setupRouter() *gin.Engine {
+	router := gin.Default()
 
-	// Простой HTTP-сервер
-	http.HandleFunc("/", helloHandler)
-	fmt.Println("Starting server on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Printf("Error starting server: %s\n", err)
+	// Публичные маршруты
+	router.POST("/auth/login", handlers.Login)
+	router.POST("/users", handlers.CreateUser) // Без JWT-аутентификации
+
+	// Защищенные маршруты
+	authorized := router.Group("/")
+	authorized.Use(middleware.JWTAuthMiddleware())
+	{
+		// Маршруты пользователей
+		authorized.GET("/users", handlers.GetUsers)
+		authorized.GET("/users/:id", handlers.GetUser)
+		authorized.PUT("/users/:id", handlers.UpdateUser)
+		authorized.DELETE("/users/:id", handlers.DeleteUser)
+
+		// Маршруты заказов
+		authorized.POST("/users/:user_id/orders", handlers.CreateOrder)
+		authorized.GET("/users/:user_id/orders", handlers.GetUserOrders)
 	}
-}
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, Go Professional!")
+	return router
 }

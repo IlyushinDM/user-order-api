@@ -30,6 +30,8 @@ go.work.sum
 # env file
 .env
 
+.dockerignore
+
 # OS generated files
 .DS_Store
 .DS_Store?
