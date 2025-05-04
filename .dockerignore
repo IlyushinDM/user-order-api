@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# Файлы, вязанные с ОС
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
+
+# Временные файлы
+*~
+
+# Артефакты билда
+/build/
+
+
+*.go
+
+.env
+
+*_test.go
+*-test.go

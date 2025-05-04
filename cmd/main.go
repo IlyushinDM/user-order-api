@@ -1,115 +1,110 @@
 package main
 
 import (
-	"github.com/IlyushinDM/user-order-api/internal/handlers"
-	"github.com/IlyushinDM/user-order-api/internal/middleware"
+	"fmt"
+	"os"
+
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
+	// Placeholder imports for project structure
+	"github.com/IlyushinDM/user-order-api/internal/middleware"
+	"github.com/IlyushinDM/user-order-api/internal/repository"
+	"github.com/IlyushinDM/user-order-api/internal/services"
+	"github.com/IlyushinDM/user-order-api/internal/utils"
+	"github.com/IlyushinDM/user-order-apioject/internal/handlers"
 )
 
-func setupRouter() *gin.Engine {
-	router := gin.Default()
-
-	// Публичные маршруты
-	router.POST("/auth/login", handlers.Login)
-	router.POST("/users", handlers.CreateUser) // Без JWT-аутентификации
-
-	// Защищенные маршруты
-	authorized := router.Group("/")
-	authorized.Use(middleware.JWTAuthMiddleware())
-	{
-		// Маршруты пользователей
-		authorized.GET("/users", handlers.GetUsers)
-		authorized.GET("/users/:id", handlers.GetUser)
-		authorized.PUT("/users/:id", handlers.UpdateUser)
-		authorized.DELETE("/users/:id", handlers.DeleteUser)
-
-		// Маршруты заказов
-		authorized.POST("/users/:user_id/orders", handlers.CreateOrder)
-		authorized.GET("/users/:user_id/orders", handlers.GetUserOrders)
+func main() {
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		logrus.Fatalf("Error loading .env file: %v", err)
 	}
 
-	return router
+	// Initialize Logrus
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
+
+	logrus.Info("Application starting...")
+
+	// Database connection
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	sslMode := os.Getenv("DB_SSLMODE") // ???
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		dbHost, dbPort, dbUser, dbPassword, dbName, sslMode)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		logrus.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	logrus.Info("Database connection established")
+
+	// Auto-migrate database schema (optional, typically handled by migrations)
+	// err = db.AutoMigrate(&models.User{}, &models.Order{})
+	// if err != nil {
+	// 	logrus.Fatalf("Failed to auto-migrate database: %v", err)
+	// }
+	// logrus.Info("Database auto-migration completed")
+
+	// Initialize repositories, services, and handlers
+	userRepo := repository.NewUserDatabase(db)
+	orderRepo := repository.NewOrderDatabase(db)
+
+	userService := services.NewUserService(userRepo)
+	orderService := services.NewOrderService(orderRepo)
+
+	userHandler := handlers.NewUserHandler(userService)
+	authHandler := handlers.NewAuthHandler(userService) // Assuming an auth handler exists
+	orderHandler := handlers.NewOrderHandler(orderService)
+
+	// Initialize Gin router
+	router := gin.Default()
+
+	// Global Middleware
+	router.Use(utils.LoggerMiddleware(), gin.Recovery()) // Assuming LoggerMiddleware and Recovery are in utils
+
+	// Public routes (e.g., authentication)
+	public := router.Group("/auth")
+	{
+		public.POST("/login", authHandler.Login)
+	}
+
+	// Protected routes (require JWT authentication)
+	api := router.Group("/api")
+	api.Use(middleware.AuthRequired()) // Assuming AuthRequired is in middleware
+	{
+		// User routes
+		api.POST("/users", userHandler.CreateUser)
+		api.GET("/users", userHandler.GetUsers) // Includes pagination/filtering
+		api.GET("/users/:id", userHandler.GetUserByID)
+		api.PUT("/users/:id", userHandler.UpdateUser)
+		api.DELETE("/users/:id", userHandler.DeleteUser)
+
+		// Order routes
+		api.POST("/users/:user_id/orders", orderHandler.CreateOrder)
+		api.GET("/users/:user_id/orders", orderHandler.GetOrdersByUserID)
+	}
+
+	// Optional: Swagger documentation route
+	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler)) // Requires setting up Swagger
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port
+	}
+	logrus.Infof("Starting server on port %s", port)
+	if err := router.Run(":" + port); err != nil {
+		logrus.Fatalf("Failed to run server: %v", err)
+	}
 }
-
-// import (
-// 	"log"
-// 	"os"
-
-// 	"your_module_path/internal/handlers" // Replace with your module path
-// 	"your_module_path/internal/repository" // Replace with your module path
-// 	"your_module_path/internal/services" // Replace with your module path
-// 	"your_module_path/internal/middleware" // Replace with your module path
-// 	"your_module_path/internal/models" // Replace with your module path
-
-// 	"github.com/gin-gonic/gin"
-// 	"gorm.io/driver/postgres"
-// 	"gorm.io/gorm"
-// 	"github.com/joho/godotenv" // Optional: for loading .env file
-// )
-
-// func main() {
-// 	// Load environment variables from .env file (optional)
-// 	if err := godotenv.Load(); err != nil {
-// 		log.Println("No .env file found, reading from environment")
-// 	}
-
-// 	// Database connection
-// 	dsn := os.Getenv("DATABASE_URL") // Get connection string from environment variable
-// 	if dsn == "" {
-// 		log.Fatal("DATABASE_URL environment variable not set")
-// 	}
-
-// 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-// 	if err != nil {
-// 		log.Fatalf("Failed to connect to database: %v", err)
-// 	}
-
-// 	// Auto-migrate the schema (for development/simple projects, migrations preferred for production)
-// 	// In a real project with a migrations folder, you'd run migration scripts here or separately.
-// 	err = db.AutoMigrate(&models.User{}, &models.Order{})
-// 	if err != nil {
-// 		log.Fatalf("Failed to auto-migrate database schema: %v", err)
-// 	}
-
-// 	// Initialize repositories
-// 	userRepo := repository.NewUserRepository(db)
-// 	orderRepo := repository.NewOrderRepository(db) // Assuming you create OrderRepository
-
-// 	// Initialize services
-// 	userService := services.NewUserService(userRepo)
-// 	orderService := services.NewOrderService(orderRepo) // Assuming you create OrderService
-
-// 	// Initialize handlers
-// 	userHandler := handlers.NewUserHandler(userService)
-// 	orderHandler := handlers.NewOrderHandler(orderService) // Assuming you create OrderHandler
-// 	authHandler := handlers.NewAuthHandler(userService) // Assuming you create AuthHandler
-
-// 	// Setup Gin router
-// 	router := gin.Default()
-
-// 	// Public routes
-// 	router.POST("/auth/login", authHandler.Login) // Assuming Login handler exists
-// 	router.POST("/users", userHandler.CreateUser) // User creation might be public or require admin auth
-
-// 	// Authenticated routes
-// 	authenticated := router.Group("/")
-// 	authenticated.Use(middleware.JWTAuthMiddleware()) // Assuming JWTAuthMiddleware exists
-// 	{
-// 		authenticated.GET("/users", userHandler.ListUsers)
-// 		authenticated.GET("/users/:id", userHandler.GetUserByID)
-// 		authenticated.PUT("/users/:id", userHandler.UpdateUser)
-// 		authenticated.DELETE("/users/:id", userHandler.DeleteUser)
-// 		authenticated.POST("/users/:user_id/orders", orderHandler.CreateOrder)
-// 		authenticated.GET("/users/:user_id/orders", orderHandler.ListOrders)
-// 	}
-
-// 	// Run the server
-// 	port := os.Getenv("PORT")
-// 	if port == "" {
-// 		port = "8080" // Default port if not specified
-// 	}
-// 	log.Printf("Server starting on port %s", port)
-// 	if err := router.Run(":" + port); err != nil {
-// 		log.Fatalf("Server failed to start: %v", err)
-// 	}
-// }

@@ -1,59 +1,21 @@
-version: '3.8'
+version: "3.8"
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "${PORT}:${PORT}"
+    environment:
+      DB_URL: postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     depends_on:
       - db
-    environment:
-      - DB_HOST=db
 
   db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: userorderdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yourpassword
+    image: postgres:17
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-
-
-
-# version: '3.8'
-
-# services:
-#   db:
-#     image: postgres:15
-#     restart: always
-#     environment:
-#       POSTGRES_DB: mydb
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: pass
-#     ports:
-#       - "5432:5432"
-#     volumes:
-#       - pgdata:/var/lib/postgresql/data
-
-#   api:
-#     build: .
-#     ports:
-#       - "8080:8080"
-#     environment:
-#       - DB_HOST=db
-#       - DB_PORT=5432
-#       - DB_NAME=mydb
-#       - DB_USER=user
-#       - DB_PASSWORD=pass
-#       - JWT_SECRET=secret
-#       - PORT=8080
-#     depends_on:
-#       - db
-
-# volumes:
-#   pgdata:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
