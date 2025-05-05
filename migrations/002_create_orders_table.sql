@@ -5,3 +5,14 @@ CREATE TABLE orders (
   quantity INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- CREATE TABLE IF NOT EXISTS orders (
+--   id SERIAL PRIMARY KEY,
+--   user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+--   product_name VARCHAR(255) NOT NULL,
+--   quantity INT NOT NULL,
+--   price DECIMAL(10, 2) NOT NULL,
+--   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+--   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+--   deleted_at TIMESTAMPTZ
+-- );

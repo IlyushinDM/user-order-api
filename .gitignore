@@ -13,9 +13,6 @@ user-order-api
 
 # Dependencies
 /vendor/
-go.mod.sum
-go.mod
-go.sum
 
 # IDE
 .idea/
