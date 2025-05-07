@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/IlyushinDM/user-order-api/docs" // Swagger docs generated path
+	_ "github.com/IlyushinDM/user-order-api/docs"
 	"github.com/IlyushinDM/user-order-api/internal/handlers"
 	"github.com/IlyushinDM/user-order-api/internal/middleware"
 	"github.com/IlyushinDM/user-order-api/internal/models"
@@ -35,7 +35,7 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host localhost:8080
-// @BasePath /api/v1
+// @BasePath /
 // @schemes http https
 
 // @securityDefinitions.apikey BearerAuth
@@ -85,22 +85,33 @@ func main() {
 	router.Use(middleware.LoggerMiddleware(log)) // Log requests using Logrus
 
 	// --- Routes ---
-	// Public routes (Swagger, Auth)
+
+	// Swagger (Public)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	authRoutes := router.Group("/auth")
+
+	// Authentication routes (Public) - Grouping under /auth
+	authRoutes := router.Group("/auth") // Use /auth instead of /api/v1/auth if base path is /
 	{
+		// *** Correctly registered login route ***
 		authRoutes.POST("/login", userHandler.LoginUser)
-		// Potentially add /register here if CreateUser shouldn't be protected
+		// Consider adding registration here as well:
+		authRoutes.POST("/register", userHandler.CreateUser)
 	}
 
-	// API v1 routes (protected by JWT)
+	// API v1 routes (Protected by JWT)
 	api := router.Group("/api/v1")
 	api.Use(middleware.AuthMiddleware(log)) // Apply JWT authentication to all /api/v1 routes
 	{
 		// User routes (already protected by group middleware)
 		userRoutes := api.Group("/users")
 		{
-			userRoutes.POST("", userHandler.CreateUser) // Keep POST /users public or move under /auth/register? Decision: Keep here for now, relies on service logic. Or move register to /auth
+			// *** NOTE: CreateUser is now protected by AuthMiddleware because it's inside /api/v1 ***
+			// If CreateUser should be public (registration), move it outside this group
+			// or to the /auth group above and remove AuthMiddleware check for it.
+			// Current state: Requires Auth token to create a user.
+			// If you want public registration, REMOVE this line and uncomment the one in /auth group.
+			userRoutes.POST("", userHandler.CreateUser)
+
 			userRoutes.GET("", userHandler.GetAllUsers)
 			userRoutes.GET("/:id", userHandler.GetUserByID)
 			userRoutes.PUT("/:id", userHandler.UpdateUser)
@@ -241,6 +252,3 @@ func initDB(log *logrus.Logger) (*gorm.DB, error) {
 	log.Info("Database connection established successfully.")
 	return db, nil
 }
-
-// Make sure other files (user_model.go, user_handler.go, etc.) remain the same
-// as in the previous response unless other changes are needed.

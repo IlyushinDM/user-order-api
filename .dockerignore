@@ -18,11 +18,7 @@ Thumbs.db
 
 # Артефакты билда
 /build/
-
-
 *.go
-
 .env
-
 *_test.go
 *-test.go

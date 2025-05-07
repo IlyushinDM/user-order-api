@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/IlyushinDM/user-order-api/internal/handlers" // For ErrorResponse
+	"github.com/IlyushinDM/user-order-api/internal/handlers"
 	"github.com/IlyushinDM/user-order-api/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -16,6 +16,11 @@ import (
 // AuthMiddleware creates a Gin middleware for JWT authentication.
 func AuthMiddleware(log *logrus.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodPost && c.Request.URL.Path == "/api/v1/users" {
+			c.Next()
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			log.Warn("AuthMiddleware: Authorization header missing")

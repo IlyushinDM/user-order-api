@@ -34,7 +34,7 @@ func NewOrderHandler(orderService services.OrderService, log *logrus.Logger) *Or
 // @Failure 401 {object} ErrorResponse "Unauthorized"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /orders [post]
+// @Router /api/v1/users/{user_id}/orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	var req models.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -82,7 +82,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse "Order not found or access denied"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /orders/{id} [get]
+// @Router /api/v1/users/{user_id}/orders/{id} [get]
 func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	idStr := c.Param("id")
 	orderID, err := strconv.ParseUint(idStr, 10, 32)
@@ -135,7 +135,7 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 // @Failure 401 {object} ErrorResponse "Unauthorized"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /orders [get]
+// @Router /api/v1/users/{user_id}/orders [get]
 func (h *OrderHandler) GetAllOrdersByUser(c *gin.Context) {
 	page, limit := getPaginationParams(c)
 
@@ -190,7 +190,7 @@ func (h *OrderHandler) GetAllOrdersByUser(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse "Order not found or access denied"
 // @Failure 500 {object} ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /orders/{id} [put]
+// @Router /api/v1/users/{user_id}/orders/{id} [put]
 func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 	idStr := c.Param("id")
 	orderID, err := strconv.ParseUint(idStr, 10, 32)

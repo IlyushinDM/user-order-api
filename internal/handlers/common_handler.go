@@ -67,7 +67,7 @@ func getFilteringParams(c *gin.Context) map[string]interface{} {
 		filters["name"] = name
 	}
 
-	// Add more filters here as needed
+	// TODO: добавить больше фильтров
 
 	return filters
 }

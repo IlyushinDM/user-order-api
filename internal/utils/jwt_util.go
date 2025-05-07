@@ -23,7 +23,7 @@ func GenerateJWT(userID uint, email string, secret string, expirationSeconds int
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "user-order-api", // Optional: Identify the issuer
+			Issuer:    "user-order-api",
 		},
 	}
 

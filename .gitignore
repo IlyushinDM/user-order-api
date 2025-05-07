@@ -33,9 +33,6 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
-# Временные файлы
 *~
-# Test coverage
 coverage.out
-
 .env
