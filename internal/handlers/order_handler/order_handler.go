@@ -29,13 +29,13 @@ func NewOrderHandler(orderService order_service.OrderService, log *logrus.Logger
 // @Tags Orders
 // @Accept json
 // @Produce json
-// @Param order body models.CreateOrderRequest true "Order data (product, quantity, price)"
-// @Success 201 {object} models.OrderResponse "Order created successfully"
+// @Param order body order_model.CreateOrderRequest true "Order data (product, quantity, price)"
+// @Success 201 {object} order_model.OrderResponse "Order created successfully"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid input data"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /api/users/{user_id}/orders [post]
+// @Router /api/users/{userID}/orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	var req order_model.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -77,13 +77,13 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 // @Tags Orders
 // @Produce json
 // @Param id path int true "Order ID" Format(uint)
-// @Success 200 {object} models.OrderResponse "Order details"
+// @Success 200 {object} order_model.OrderResponse "Order details"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid order ID format"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 404 {object} common_handler.ErrorResponse "Order not found or access denied"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /api/users/{user_id}/orders/{id} [get]
+// @Router /api/users/{userID}/orders/{id} [get]
 func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	idStr := c.Param("id")
 	orderID, err := strconv.ParseUint(idStr, 10, 32)
@@ -131,12 +131,12 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1) minimum(1)
 // @Param limit query int false "Items per page" default(10) minimum(1) maximum(100)
-// @Success 200 {object} models.PaginatedOrdersResponse "List of user's orders"
+// @Success 200 {object} order_model.PaginatedOrdersResponse "List of user's orders"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid query parameters"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /api/users/{user_id}/orders [get]
+// @Router /api/users/{userID}/orders [get]
 func (h *OrderHandler) GetAllOrdersByUser(c *gin.Context) {
 	page, limit := common_handler.GetPaginationParams(c)
 
@@ -184,14 +184,14 @@ func (h *OrderHandler) GetAllOrdersByUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Order ID" Format(uint)
-// @Param order body models.UpdateOrderRequest true "Order data to update"
-// @Success 200 {object} models.OrderResponse "Order updated successfully"
+// @Param order body order_model.UpdateOrderRequest true "Order data to update"
+// @Success 200 {object} order_model.OrderResponse "Order updated successfully"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid input data or order ID format"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 404 {object} common_handler.ErrorResponse "Order not found or access denied"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
 // @Security BearerAuth
-// @Router /api/users/{user_id}/orders/{id} [put]
+// @Router /api/users/{userID}/orders/{id} [put]
 func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 	idStr := c.Param("id")
 	orderID, err := strconv.ParseUint(idStr, 10, 32)

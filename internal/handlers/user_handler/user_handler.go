@@ -29,8 +29,8 @@ func NewUserHandler(userService user_service.UserService, log *logrus.Logger) *U
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Param user body models.CreateUserRequest true "User data"
-// @Success 201 {object} models.UserResponse "User created successfully"
+// @Param user body user_model.CreateUserRequest true "User data"
+// @Success 201 {object} user_model.UserResponse "User created successfully"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid input data"
 // @Failure 409 {object} common_handler.ErrorResponse "User with this email already exists"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
@@ -69,7 +69,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // @Tags Users
 // @Produce json
 // @Param id path int true "User ID" Format(uint)
-// @Success 200 {object} models.UserResponse "User details"
+// @Success 200 {object} user_model.UserResponse "User details"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid user ID format"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 404 {object} common_handler.ErrorResponse "User not found"
@@ -115,7 +115,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 // @Param min_age query int false "Minimum age filter" minimum(1)
 // @Param max_age query int false "Maximum age filter" minimum(1)
 // @Param name query string false "Name filter (case-insensitive, partial match)"
-// @Success 200 {object} models.PaginatedUsersResponse "List of users"
+// @Success 200 {object} user_model.PaginatedUsersResponse "List of users"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid query parameters"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
@@ -159,8 +159,8 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID" Format(uint)
-// @Param user body models.UpdateUserRequest true "User data to update"
-// @Success 200 {object} models.UserResponse "User updated successfully"
+// @Param user body user_model.UpdateUserRequest true "User data to update"
+// @Success 200 {object} user_model.UserResponse "User updated successfully"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid input data or user ID format"
 // @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
 // @Failure 403 {object} common_handler.ErrorResponse "Forbidden (trying to update another user - simplistic check)"
@@ -282,8 +282,8 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param credentials body models.LoginRequest true "Login credentials"
-// @Success 200 {object} models.LoginResponse "Login successful, includes JWT token"
+// @Param credentials body user_model.LoginRequest true "Login credentials"
+// @Success 200 {object} user_model.LoginResponse "Login successful, includes JWT token"
 // @Failure 400 {object} common_handler.ErrorResponse "Invalid input data"
 // @Failure 401 {object} common_handler.ErrorResponse "Invalid credentials"
 // @Failure 500 {object} common_handler.ErrorResponse "Internal server error"

@@ -24,358 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/login": {
-            "post": {
-                "description": "Authenticate a user with email and password, returns a JWT token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "User login",
-                "parameters": [
-                    {
-                        "description": "Login credentials",
-                        "name": "credentials",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Login successful, includes JWT token",
-                        "schema": {
-                            "$ref": "#/definitions/models.LoginResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input data",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid credentials",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/orders": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve a paginated list of orders belonging to the currently authenticated user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Orders"
-                ],
-                "summary": "Get all orders for the authenticated user",
-                "parameters": [
-                    {
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "default": 10,
-                        "description": "Items per page",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of user's orders",
-                        "schema": {
-                            "$ref": "#/definitions/models.PaginatedOrdersResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid query parameters",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new order for the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Orders"
-                ],
-                "summary": "Create a new order",
-                "parameters": [
-                    {
-                        "description": "Order data (product, quantity, price)",
-                        "name": "order",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateOrderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Order created successfully",
-                        "schema": {
-                            "$ref": "#/definitions/models.OrderResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input data",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/orders/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve details of a specific order by its ID. Requires authentication. User can only retrieve their own orders.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Orders"
-                ],
-                "summary": "Get order by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "uint",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Order details",
-                        "schema": {
-                            "$ref": "#/definitions/models.OrderResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid order ID format",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Order not found or access denied",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update details of an existing order by its ID. Requires authentication. User can only update their own orders.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Orders"
-                ],
-                "summary": "Update an order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "uint",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Order data to update",
-                        "name": "order",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UpdateOrderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Order updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/models.OrderResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input data or order ID format",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Order not found or access denied",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete an order by its ID. Requires authentication. User can only delete their own orders.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Orders"
-                ],
-                "summary": "Delete an order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "uint",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Order deleted successfully"
-                    },
-                    "400": {
-                        "description": "Invalid order ID format",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Order not found or access denied",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users": {
+        "/api/users": {
             "get": {
                 "security": [
                     {
@@ -433,25 +82,25 @@ const docTemplate = `{
                     "200": {
                         "description": "List of users",
                         "schema": {
-                            "$ref": "#/definitions/models.PaginatedUsersResponse"
+                            "$ref": "#/definitions/user_model.PaginatedUsersResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid query parameters",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     }
                 }
@@ -475,7 +124,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateUserRequest"
+                            "$ref": "#/definitions/user_model.CreateUserRequest"
                         }
                     }
                 ],
@@ -483,31 +132,31 @@ const docTemplate = `{
                     "201": {
                         "description": "User created successfully",
                         "schema": {
-                            "$ref": "#/definitions/models.UserResponse"
+                            "$ref": "#/definitions/user_model.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid input data",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "User with this email already exists",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/users/{id}": {
+        "/api/users/{id}": {
             "get": {
                 "security": [
                     {
@@ -536,31 +185,31 @@ const docTemplate = `{
                     "200": {
                         "description": "User details",
                         "schema": {
-                            "$ref": "#/definitions/models.UserResponse"
+                            "$ref": "#/definitions/user_model.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid user ID format",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     }
                 }
@@ -597,7 +246,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UpdateUserRequest"
+                            "$ref": "#/definitions/user_model.UpdateUserRequest"
                         }
                     }
                 ],
@@ -605,43 +254,43 @@ const docTemplate = `{
                     "200": {
                         "description": "User updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/models.UserResponse"
+                            "$ref": "#/definitions/user_model.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid input data or user ID format",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden (trying to update another user - simplistic check)",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Email already taken by another user",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     }
                 }
@@ -677,31 +326,384 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid user ID format",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden (trying to delete another user)",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{userID}/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a paginated list of orders belonging to the currently authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Get all orders for the authenticated user",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of user's orders",
+                        "schema": {
+                            "$ref": "#/definitions/order_model.PaginatedOrdersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid query parameters",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new order for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Create a new order",
+                "parameters": [
+                    {
+                        "description": "Order data (product, quantity, price)",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/order_model.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Order created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/order_model.OrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{userID}/orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve details of a specific order by its ID. Requires authentication. User can only retrieve their own orders.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Get order by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order details",
+                        "schema": {
+                            "$ref": "#/definitions/order_model.OrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid order ID format",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found or access denied",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update details of an existing order by its ID. Requires authentication. User can only update their own orders.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Update an order",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Order data to update",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/order_model.UpdateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/order_model.OrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data or order ID format",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found or access denied",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate a user with email and password, returns a JWT token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user_model.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful, includes JWT token",
+                        "schema": {
+                            "$ref": "#/definitions/user_model.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an order by its ID. Requires authentication. User can only delete their own orders.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Delete an order",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Order deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid order ID format",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found or access denied",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     }
                 }
@@ -709,7 +711,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.ErrorResponse": {
+        "common_handler.ErrorResponse": {
             "type": "object",
             "properties": {
                 "details": {
@@ -722,7 +724,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CreateOrderRequest": {
+        "order_model.CreateOrderRequest": {
             "type": "object",
             "required": [
                 "price",
@@ -744,7 +746,68 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CreateUserRequest": {
+        "order_model.OrderResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "order_model.PaginatedOrdersResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Number of items per page\nexample: 10",
+                    "type": "integer"
+                },
+                "orders": {
+                    "description": "List of orders on the current page",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order_model.OrderResponse"
+                    }
+                },
+                "page": {
+                    "description": "Current page number\nexample: 1",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "Total number of orders matching the criteria\nexample: 50",
+                    "type": "integer"
+                }
+            }
+        },
+        "order_model.UpdateOrderRequest": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "description": "New price per unit (must be positive, optional)\nexample: 1300.00",
+                    "type": "number"
+                },
+                "product_name": {
+                    "description": "New name of the product (optional)\nexample: Gaming Laptop",
+                    "type": "string"
+                },
+                "quantity": {
+                    "description": "New quantity (must be positive, optional)\nexample: 2",
+                    "type": "integer"
+                }
+            }
+        },
+        "user_model.CreateUserRequest": {
             "type": "object",
             "required": [
                 "age",
@@ -772,7 +835,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LoginRequest": {
+        "user_model.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -780,127 +843,66 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "description": "User's email address\nrequired: true\nexample: john.doe@example.com",
+                    "description": "User's email address\nrequired: true",
                     "type": "string"
                 },
                 "password": {
-                    "description": "User's password\nrequired: true\nexample: password123",
+                    "description": "User's password\nrequired: true",
                     "type": "string"
                 }
             }
         },
-        "models.LoginResponse": {
+        "user_model.LoginResponse": {
             "type": "object",
             "properties": {
                 "token": {
-                    "description": "JWT authentication token\nexample: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "description": "JWT authentication token",
                     "type": "string"
                 }
             }
         },
-        "models.OrderResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "product_name": {
-                    "type": "string"
-                },
-                "quantity": {
-                    "type": "integer"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "models.PaginatedOrdersResponse": {
+        "user_model.PaginatedUsersResponse": {
             "type": "object",
             "properties": {
                 "limit": {
-                    "description": "Number of items per page\nexample: 10",
-                    "type": "integer"
-                },
-                "orders": {
-                    "description": "List of orders on the current page",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.OrderResponse"
-                    }
-                },
-                "page": {
-                    "description": "Current page number\nexample: 1",
-                    "type": "integer"
-                },
-                "total": {
-                    "description": "Total number of orders matching the criteria\nexample: 50",
-                    "type": "integer"
-                }
-            }
-        },
-        "models.PaginatedUsersResponse": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "description": "Number of items per page\nexample: 10",
+                    "description": "Number of items per page",
                     "type": "integer"
                 },
                 "page": {
-                    "description": "Current page number\nexample: 1",
+                    "description": "Current page number",
                     "type": "integer"
                 },
                 "total": {
-                    "description": "Total number of users matching the criteria\nexample: 100",
+                    "description": "Total number of users matching the criteria",
                     "type": "integer"
                 },
                 "users": {
                     "description": "List of users on the current page",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.UserResponse"
+                        "$ref": "#/definitions/user_model.UserResponse"
                     }
                 }
             }
         },
-        "models.UpdateOrderRequest": {
-            "type": "object",
-            "properties": {
-                "price": {
-                    "description": "New price per unit (must be positive, optional)\nexample: 1300.00",
-                    "type": "number"
-                },
-                "product_name": {
-                    "description": "New name of the product (optional)\nexample: Gaming Laptop",
-                    "type": "string"
-                },
-                "quantity": {
-                    "description": "New quantity (must be positive, optional)\nexample: 2",
-                    "type": "integer"
-                }
-            }
-        },
-        "models.UpdateUserRequest": {
+        "user_model.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "age": {
-                    "description": "User's age (must be positive, optional)\nexample: 31",
+                    "description": "User's age (must be positive, optional)",
                     "type": "integer"
                 },
                 "email": {
-                    "description": "User's unique email address (optional)\nexample: johnathan.doe@example.com",
+                    "description": "User's unique email address (optional)",
                     "type": "string"
                 },
                 "name": {
-                    "description": "User's full name (optional)\nexample: Johnathan Doe",
+                    "description": "User's full name (optional)",
                     "type": "string"
                 }
             }
         },
-        "models.UserResponse": {
+        "user_model.UserResponse": {
             "type": "object",
             "properties": {
                 "age": {
@@ -920,7 +922,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token. Example: \"Bearer {token}\"",
+            "description": "Введите \"Bearer\" с пробелом и JWT токеном. Пример: \"Bearer {token}\"",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -932,10 +934,10 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/api",
+	BasePath:         "/",
 	Schemes:          []string{"http", "https"},
 	Title:            "User Order API",
-	Description:      "This is a sample server for managing users and their orders.",
+	Description:      "Пример сервера для управления пользователями и их заказами.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

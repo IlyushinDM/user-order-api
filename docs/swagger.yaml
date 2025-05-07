@@ -1,6 +1,6 @@
-basePath: /api
+basePath: /
 definitions:
-  handlers.ErrorResponse:
+  common_handler.ErrorResponse:
     properties:
       details:
         description: |-
@@ -13,7 +13,7 @@ definitions:
           example: Invalid input data
         type: string
     type: object
-  models.CreateOrderRequest:
+  order_model.CreateOrderRequest:
     properties:
       price:
         description: |-
@@ -38,7 +38,61 @@ definitions:
     - product_name
     - quantity
     type: object
-  models.CreateUserRequest:
+  order_model.OrderResponse:
+    properties:
+      id:
+        type: integer
+      price:
+        type: number
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  order_model.PaginatedOrdersResponse:
+    properties:
+      limit:
+        description: |-
+          Number of items per page
+          example: 10
+        type: integer
+      orders:
+        description: List of orders on the current page
+        items:
+          $ref: '#/definitions/order_model.OrderResponse'
+        type: array
+      page:
+        description: |-
+          Current page number
+          example: 1
+        type: integer
+      total:
+        description: |-
+          Total number of orders matching the criteria
+          example: 50
+        type: integer
+    type: object
+  order_model.UpdateOrderRequest:
+    properties:
+      price:
+        description: |-
+          New price per unit (must be positive, optional)
+          example: 1300.00
+        type: number
+      product_name:
+        description: |-
+          New name of the product (optional)
+          example: Gaming Laptop
+        type: string
+      quantity:
+        description: |-
+          New quantity (must be positive, optional)
+          example: 2
+        type: integer
+    type: object
+  user_model.CreateUserRequest:
     properties:
       age:
         description: |-
@@ -71,128 +125,58 @@ definitions:
     - name
     - password
     type: object
-  models.LoginRequest:
+  user_model.LoginRequest:
     properties:
       email:
         description: |-
           User's email address
           required: true
-          example: john.doe@example.com
         type: string
       password:
         description: |-
           User's password
           required: true
-          example: password123
         type: string
     required:
     - email
     - password
     type: object
-  models.LoginResponse:
+  user_model.LoginResponse:
     properties:
       token:
-        description: |-
-          JWT authentication token
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        description: JWT authentication token
         type: string
     type: object
-  models.OrderResponse:
-    properties:
-      id:
-        type: integer
-      price:
-        type: number
-      product_name:
-        type: string
-      quantity:
-        type: integer
-      user_id:
-        type: integer
-    type: object
-  models.PaginatedOrdersResponse:
+  user_model.PaginatedUsersResponse:
     properties:
       limit:
-        description: |-
-          Number of items per page
-          example: 10
-        type: integer
-      orders:
-        description: List of orders on the current page
-        items:
-          $ref: '#/definitions/models.OrderResponse'
-        type: array
-      page:
-        description: |-
-          Current page number
-          example: 1
-        type: integer
-      total:
-        description: |-
-          Total number of orders matching the criteria
-          example: 50
-        type: integer
-    type: object
-  models.PaginatedUsersResponse:
-    properties:
-      limit:
-        description: |-
-          Number of items per page
-          example: 10
+        description: Number of items per page
         type: integer
       page:
-        description: |-
-          Current page number
-          example: 1
+        description: Current page number
         type: integer
       total:
-        description: |-
-          Total number of users matching the criteria
-          example: 100
+        description: Total number of users matching the criteria
         type: integer
       users:
         description: List of users on the current page
         items:
-          $ref: '#/definitions/models.UserResponse'
+          $ref: '#/definitions/user_model.UserResponse'
         type: array
     type: object
-  models.UpdateOrderRequest:
-    properties:
-      price:
-        description: |-
-          New price per unit (must be positive, optional)
-          example: 1300.00
-        type: number
-      product_name:
-        description: |-
-          New name of the product (optional)
-          example: Gaming Laptop
-        type: string
-      quantity:
-        description: |-
-          New quantity (must be positive, optional)
-          example: 2
-        type: integer
-    type: object
-  models.UpdateUserRequest:
+  user_model.UpdateUserRequest:
     properties:
       age:
-        description: |-
-          User's age (must be positive, optional)
-          example: 31
+        description: User's age (must be positive, optional)
         type: integer
       email:
-        description: |-
-          User's unique email address (optional)
-          example: johnathan.doe@example.com
+        description: User's unique email address (optional)
         type: string
       name:
-        description: |-
-          User's full name (optional)
-          example: Johnathan Doe
+        description: User's full name (optional)
         type: string
     type: object
-  models.UserResponse:
+  user_model.UserResponse:
     properties:
       age:
         type: integer
@@ -209,7 +193,7 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is a sample server for managing users and their orders.
+  description: Пример сервера для управления пользователями и их заказами.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -217,239 +201,7 @@ info:
   title: User Order API
   version: "1.0"
 paths:
-  /auth/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate a user with email and password, returns a JWT token.
-      parameters:
-      - description: Login credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/models.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Login successful, includes JWT token
-          schema:
-            $ref: '#/definitions/models.LoginResponse'
-        "400":
-          description: Invalid input data
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "401":
-          description: Invalid credentials
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      summary: User login
-      tags:
-      - Auth
-  /orders:
-    get:
-      description: Retrieve a paginated list of orders belonging to the currently
-        authenticated user.
-      parameters:
-      - default: 1
-        description: Page number
-        in: query
-        minimum: 1
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        maximum: 100
-        minimum: 1
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of user's orders
-          schema:
-            $ref: '#/definitions/models.PaginatedOrdersResponse'
-        "400":
-          description: Invalid query parameters
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all orders for the authenticated user
-      tags:
-      - Orders
-    post:
-      consumes:
-      - application/json
-      description: Create a new order for the authenticated user.
-      parameters:
-      - description: Order data (product, quantity, price)
-        in: body
-        name: order
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateOrderRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Order created successfully
-          schema:
-            $ref: '#/definitions/models.OrderResponse'
-        "400":
-          description: Invalid input data
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create a new order
-      tags:
-      - Orders
-  /orders/{id}:
-    delete:
-      description: Delete an order by its ID. Requires authentication. User can only
-        delete their own orders.
-      parameters:
-      - description: Order ID
-        format: uint
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Order deleted successfully
-        "400":
-          description: Invalid order ID format
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "404":
-          description: Order not found or access denied
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete an order
-      tags:
-      - Orders
-    get:
-      description: Retrieve details of a specific order by its ID. Requires authentication.
-        User can only retrieve their own orders.
-      parameters:
-      - description: Order ID
-        format: uint
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Order details
-          schema:
-            $ref: '#/definitions/models.OrderResponse'
-        "400":
-          description: Invalid order ID format
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "404":
-          description: Order not found or access denied
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get order by ID
-      tags:
-      - Orders
-    put:
-      consumes:
-      - application/json
-      description: Update details of an existing order by its ID. Requires authentication.
-        User can only update their own orders.
-      parameters:
-      - description: Order ID
-        format: uint
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Order data to update
-        in: body
-        name: order
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateOrderRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Order updated successfully
-          schema:
-            $ref: '#/definitions/models.OrderResponse'
-        "400":
-          description: Invalid input data or order ID format
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "404":
-          description: Order not found or access denied
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update an order
-      tags:
-      - Orders
-  /users:
+  /api/users:
     get:
       description: Retrieve a paginated and filtered list of users. Requires authentication.
       parameters:
@@ -486,19 +238,19 @@ paths:
         "200":
           description: List of users
           schema:
-            $ref: '#/definitions/models.PaginatedUsersResponse'
+            $ref: '#/definitions/user_model.PaginatedUsersResponse'
         "400":
           description: Invalid query parameters
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get all users
@@ -514,30 +266,30 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.CreateUserRequest'
+          $ref: '#/definitions/user_model.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: User created successfully
           schema:
-            $ref: '#/definitions/models.UserResponse'
+            $ref: '#/definitions/user_model.UserResponse'
         "400":
           description: Invalid input data
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "409":
           description: User with this email already exists
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
       summary: Create a new user
       tags:
       - Users
-  /users/{id}:
+  /api/users/{id}:
     delete:
       description: Delete a user by their ID. Requires authentication. User can only
         delete their own account unless they are an admin (admin logic not implemented
@@ -557,23 +309,23 @@ paths:
         "400":
           description: Invalid user ID format
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
           description: Forbidden (trying to delete another user)
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
           description: User not found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a user
@@ -594,23 +346,23 @@ paths:
         "200":
           description: User details
           schema:
-            $ref: '#/definitions/models.UserResponse'
+            $ref: '#/definitions/user_model.UserResponse'
         "400":
           description: Invalid user ID format
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
           description: User not found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get user by ID
@@ -634,50 +386,282 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.UpdateUserRequest'
+          $ref: '#/definitions/user_model.UpdateUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: User updated successfully
           schema:
-            $ref: '#/definitions/models.UserResponse'
+            $ref: '#/definitions/user_model.UserResponse'
         "400":
           description: Invalid input data or user ID format
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
           description: Forbidden (trying to update another user - simplistic check)
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
           description: User not found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "409":
           description: Email already taken by another user
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update a user
       tags:
       - Users
+  /api/users/{userID}/orders:
+    get:
+      description: Retrieve a paginated list of orders belonging to the currently
+        authenticated user.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user's orders
+          schema:
+            $ref: '#/definitions/order_model.PaginatedOrdersResponse'
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all orders for the authenticated user
+      tags:
+      - Orders
+    post:
+      consumes:
+      - application/json
+      description: Create a new order for the authenticated user.
+      parameters:
+      - description: Order data (product, quantity, price)
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/order_model.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Order created successfully
+          schema:
+            $ref: '#/definitions/order_model.OrderResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new order
+      tags:
+      - Orders
+  /api/users/{userID}/orders/{id}:
+    get:
+      description: Retrieve details of a specific order by its ID. Requires authentication.
+        User can only retrieve their own orders.
+      parameters:
+      - description: Order ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order details
+          schema:
+            $ref: '#/definitions/order_model.OrderResponse'
+        "400":
+          description: Invalid order ID format
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "404":
+          description: Order not found or access denied
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get order by ID
+      tags:
+      - Orders
+    put:
+      consumes:
+      - application/json
+      description: Update details of an existing order by its ID. Requires authentication.
+        User can only update their own orders.
+      parameters:
+      - description: Order ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Order data to update
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/order_model.UpdateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order updated successfully
+          schema:
+            $ref: '#/definitions/order_model.OrderResponse'
+        "400":
+          description: Invalid input data or order ID format
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "404":
+          description: Order not found or access denied
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an order
+      tags:
+      - Orders
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with email and password, returns a JWT token.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/user_model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful, includes JWT token
+          schema:
+            $ref: '#/definitions/user_model.LoginResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      summary: User login
+      tags:
+      - Auth
+  /orders/{id}:
+    delete:
+      description: Delete an order by its ID. Requires authentication. User can only
+        delete their own orders.
+      parameters:
+      - description: Order ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Order deleted successfully
+        "400":
+          description: Invalid order ID format
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "404":
+          description: Order not found or access denied
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an order
+      tags:
+      - Orders
 schemes:
 - http
 - https
 securityDefinitions:
   BearerAuth:
-    description: 'Type "Bearer" followed by a space and JWT token. Example: "Bearer
-      {token}"'
+    description: 'Введите "Bearer" с пробелом и JWT токеном. Пример: "Bearer {token}"'
     in: header
     name: Authorization
     type: apiKey

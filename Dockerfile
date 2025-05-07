@@ -2,15 +2,15 @@
 FROM golang:1.24.2 AS builder
 
 ENV GO111MODULE=on \
-CGO_ENABLED=0 \
-GOOS=linux \
-GOARCH=amd64
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
 
-RUN go mod download
+RUN go mod download && go mod verify
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 COPY . .
@@ -26,7 +26,13 @@ RUN apk update && apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=builder /user-order-api /app/user-order-api
-# COPY .env .env
+
+# Copy the .env file from the builder stage
+COPY --from=builder /app/.env /app/.env
+
+# Set timezone
+ENV TZ=Etc/UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 EXPOSE 8080
 
