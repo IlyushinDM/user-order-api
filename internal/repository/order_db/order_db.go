@@ -19,19 +19,19 @@ type OrderRepository interface {
 	GetAllByUser(ctx context.Context, userID uint, page, limit int) ([]order_model.Order, int64, error)
 }
 
-type gormOrderRepository struct {
-	db  *gorm.DB
+type GormOrderRepository struct {
+	DB  *gorm.DB
 	log *logrus.Logger
 }
 
 // NewGormOrderRepository creates a new order repository using GORM.
-func NewGormOrderRepository(db *gorm.DB, log *logrus.Logger) OrderRepository {
-	return &gormOrderRepository{db: db, log: log}
+func NewGormOrderRepository(DB *gorm.DB, log *logrus.Logger) OrderRepository {
+	return &GormOrderRepository{DB: DB, log: log}
 }
 
-func (r *gormOrderRepository) Create(ctx context.Context, order *order_model.Order) error {
+func (r *GormOrderRepository) Create(ctx context.Context, order *order_model.Order) error {
 	logger := r.log.WithContext(ctx).WithField("method", "OrderRepository.Create")
-	result := r.db.WithContext(ctx).Create(order)
+	result := r.DB.WithContext(ctx).Create(order)
 	if result.Error != nil {
 		logger.WithError(result.Error).Error("Failed to create order")
 		return result.Error
@@ -40,14 +40,14 @@ func (r *gormOrderRepository) Create(ctx context.Context, order *order_model.Ord
 	return nil
 }
 
-func (r *gormOrderRepository) Update(ctx context.Context, order *order_model.Order) error {
+func (r *GormOrderRepository) Update(ctx context.Context, order *order_model.Order) error {
 	logger := r.log.WithContext(ctx).WithField("method", "OrderRepository.Update").WithField("order_id", order.ID)
 
 	// Important: Ensure the update only happens if the UserID matches.
 	// The service layer should fetch the order first to verify ownership before preparing the update data.
 	// Here we assume `order` contains the ID and the fields to update.
 	// We select specific fields to prevent accidental updates of UserID.
-	result := r.db.WithContext(ctx).Model(&order_model.Order{}).Where("id = ? AND user_id = ?", order.ID, order.UserID).
+	result := r.DB.WithContext(ctx).Model(&order_model.Order{}).Where("id = ? AND user_id = ?", order.ID, order.UserID).
 		Select("ProductName", "Quantity", "Price", "UpdatedAt"). // Specify updatable fields explicitly
 		Updates(order)
 
@@ -59,7 +59,7 @@ func (r *gormOrderRepository) Update(ctx context.Context, order *order_model.Ord
 		// This could mean the order doesn't exist OR it belongs to another user.
 		// We check existence first.
 		var exists int64
-		r.db.WithContext(ctx).Model(&order_model.Order{}).Where("id = ?", order.ID).Count(&exists)
+		r.DB.WithContext(ctx).Model(&order_model.Order{}).Where("id = ?", order.ID).Count(&exists)
 		if exists == 0 {
 			logger.Warn("Order update attempted but order not found")
 			return gorm.ErrRecordNotFound
@@ -74,10 +74,10 @@ func (r *gormOrderRepository) Update(ctx context.Context, order *order_model.Ord
 	return nil
 }
 
-func (r *gormOrderRepository) Delete(ctx context.Context, id uint, userID uint) error {
+func (r *GormOrderRepository) Delete(ctx context.Context, id uint, userID uint) error {
 	logger := r.log.WithContext(ctx).WithField("method", "OrderRepository.Delete").WithField("order_id", id).WithField("user_id", userID)
 	// Soft delete only if the order belongs to the user
-	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&order_model.Order{}, id)
+	result := r.DB.WithContext(ctx).Where("user_id = ?", userID).Delete(&order_model.Order{}, id)
 	if result.Error != nil {
 		logger.WithError(result.Error).Error("Failed to delete order")
 		return result.Error
@@ -86,7 +86,7 @@ func (r *gormOrderRepository) Delete(ctx context.Context, id uint, userID uint) 
 		logger.Warn("Order deletion attempted but no rows affected (order not found or wrong user)")
 		// Check if the order exists at all to differentiate
 		var exists int64
-		r.db.WithContext(ctx).Model(&order_model.Order{}).Where("id = ?", id).Count(&exists)
+		r.DB.WithContext(ctx).Model(&order_model.Order{}).Where("id = ?", id).Count(&exists)
 		if exists == 0 {
 			return gorm.ErrRecordNotFound // Order doesn't exist
 		}
@@ -97,11 +97,11 @@ func (r *gormOrderRepository) Delete(ctx context.Context, id uint, userID uint) 
 	return nil
 }
 
-func (r *gormOrderRepository) GetByID(ctx context.Context, id uint, userID uint) (*order_model.Order, error) {
+func (r *GormOrderRepository) GetByID(ctx context.Context, id uint, userID uint) (*order_model.Order, error) {
 	logger := r.log.WithContext(ctx).WithField("method", "OrderRepository.GetByID").WithField("order_id", id).WithField("user_id", userID)
 	var order order_model.Order
 	// Find the order only if it belongs to the specified user
-	result := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&order, id)
+	result := r.DB.WithContext(ctx).Where("user_id = ?", userID).First(&order, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			logger.Warn("Order not found for this user")
@@ -114,12 +114,12 @@ func (r *gormOrderRepository) GetByID(ctx context.Context, id uint, userID uint)
 	return &order, nil
 }
 
-func (r *gormOrderRepository) GetAllByUser(ctx context.Context, userID uint, page, limit int) ([]order_model.Order, int64, error) {
+func (r *GormOrderRepository) GetAllByUser(ctx context.Context, userID uint, page, limit int) ([]order_model.Order, int64, error) {
 	logger := r.log.WithContext(ctx).WithField("method", "OrderRepository.GetAllByUser").WithField("user_id", userID)
 	var orders []order_model.Order
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&order_model.Order{}).Where("user_id = ?", userID)
+	query := r.DB.WithContext(ctx).Model(&order_model.Order{}).Where("user_id = ?", userID)
 
 	// Count total records for the user
 	countQuery := query

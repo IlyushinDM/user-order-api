@@ -423,11 +423,17 @@ paths:
       summary: Update a user
       tags:
       - Users
-  /api/users/{userID}/orders:
+  /api/users/{id}/orders:
     get:
-      description: Retrieve a paginated list of orders belonging to the currently
-        authenticated user.
+      description: Retrieve paginated list of user's orders. The {id} in the path
+        is validated against the authenticated user ID from the token.
       parameters:
+      - description: User ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
       - default: 1
         description: Page number
         in: query
@@ -445,15 +451,19 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of user's orders
+          description: List of orders
           schema:
             $ref: '#/definitions/order_model.PaginatedOrdersResponse'
         "400":
-          description: Invalid query parameters
+          description: Invalid query parameters or user ID format in URL
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "403":
+          description: Forbidden (trying to access another user's orders)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
@@ -462,14 +472,21 @@ paths:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all orders for the authenticated user
+      summary: Get all orders for user
       tags:
       - Orders
     post:
       consumes:
       - application/json
-      description: Create a new order for the authenticated user.
+      description: Create a new order for the authenticated user. The {id} in the
+        path is validated against the authenticated user ID from the token.
       parameters:
+      - description: User ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
       - description: Order data (product, quantity, price)
         in: body
         name: order
@@ -484,11 +501,15 @@ paths:
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid input data
+          description: Invalid input data or user ID format in URL
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "403":
+          description: Forbidden (trying to create order for another user)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
@@ -500,15 +521,68 @@ paths:
       summary: Create a new order
       tags:
       - Orders
-  /api/users/{userID}/orders/{id}:
-    get:
-      description: Retrieve details of a specific order by its ID. Requires authentication.
-        User can only retrieve their own orders.
+  /api/users/{id}/orders/{orderID}:
+    delete:
+      description: Delete an order by ID for a specific user. The {id} in the path
+        is validated against the authenticated user ID from the token.
       parameters:
-      - description: Order ID
+      - description: User ID
         format: uint
         in: path
         name: id
+        required: true
+        type: integer
+      - description: Order ID
+        format: uint
+        in: path
+        name: orderID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Order deleted
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "403":
+          description: Forbidden (trying to delete another user's order)
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "404":
+          description: Order not found or access denied
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an order
+      tags:
+      - Orders
+    get:
+      description: Retrieve details of a specific order by its ID for a specific user.
+        The {id} in the path is validated against the authenticated user ID from the
+        token.
+      parameters:
+      - description: User ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Order ID
+        format: uint
+        in: path
+        name: orderID
         required: true
         type: integer
       produces:
@@ -519,11 +593,15 @@ paths:
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid order ID format
+          description: Invalid ID format
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "403":
+          description: Forbidden (trying to access another user's order)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
@@ -542,16 +620,22 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update details of an existing order by its ID. Requires authentication.
-        User can only update their own orders.
+      description: Update order details for a specific user's order. The {id} in the
+        path is validated against the authenticated user ID from the token.
       parameters:
-      - description: Order ID
+      - description: User ID
         format: uint
         in: path
         name: id
         required: true
         type: integer
-      - description: Order data to update
+      - description: Order ID
+        format: uint
+        in: path
+        name: orderID
+        required: true
+        type: integer
+      - description: Order update data
         in: body
         name: order
         required: true
@@ -561,15 +645,19 @@ paths:
       - application/json
       responses:
         "200":
-          description: Order updated successfully
+          description: Updated order
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid input data or order ID format
+          description: Invalid input data or ID format
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/common_handler.ErrorResponse'
+        "403":
+          description: Forbidden (trying to update another user's order)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
@@ -619,43 +707,6 @@ paths:
       summary: User login
       tags:
       - Auth
-  /orders/{id}:
-    delete:
-      description: Delete an order by its ID. Requires authentication. User can only
-        delete their own orders.
-      parameters:
-      - description: Order ID
-        format: uint
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Order deleted successfully
-        "400":
-          description: Invalid order ID format
-          schema:
-            $ref: '#/definitions/common_handler.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/common_handler.ErrorResponse'
-        "404":
-          description: Order not found or access denied
-          schema:
-            $ref: '#/definitions/common_handler.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/common_handler.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete an order
-      tags:
-      - Orders
 schemes:
 - http
 - https

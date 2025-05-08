@@ -6,19 +6,36 @@
 .idea/
 .vscode/
 
-# Файлы, вязанные с ОС
+# OS files
 .DS_Store
 Thumbs.db
 
-# Логи
+# Logs
 *.log
 
-# Временные файлы
+# Temp files
 *~
 
-# Артефакты билда
-/build/
-*.go
-.env
+# Build artifacts
+bin/
+build/
+dist/
+out/
+
+# Test files
 *_test.go
 *-test.go
+test_results/
+
+# Source (если копируете явно папки, иначе убрать)
+*.go
+*.md
+LICENSE
+Makefile
+
+# Vendor (если не используется)
+vendor/
+
+# Configs (опасно копировать в образ)
+.env
+*.local

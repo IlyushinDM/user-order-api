@@ -356,22 +356,30 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users/{userID}/orders": {
+        "/api/users/{id}/orders": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve a paginated list of orders belonging to the currently authenticated user.",
+                "description": "Retrieve paginated list of user's orders. The {id} in the path is validated against the authenticated user ID from the token.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Orders"
                 ],
-                "summary": "Get all orders for the authenticated user",
+                "summary": "Get all orders for user",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "minimum": 1,
                         "type": "integer",
@@ -392,19 +400,25 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of user's orders",
+                        "description": "List of orders",
                         "schema": {
                             "$ref": "#/definitions/order_model.PaginatedOrdersResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid query parameters",
+                        "description": "Invalid query parameters or user ID format in URL",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (trying to access another user's orders)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -423,7 +437,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new order for the authenticated user.",
+                "description": "Create a new order for the authenticated user. The {id} in the path is validated against the authenticated user ID from the token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -435,6 +449,14 @@ const docTemplate = `{
                 ],
                 "summary": "Create a new order",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "Order data (product, quantity, price)",
                         "name": "order",
@@ -453,13 +475,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid input data",
+                        "description": "Invalid input data or user ID format in URL",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (trying to create order for another user)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -473,14 +501,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users/{userID}/orders/{id}": {
+        "/api/users/{id}/orders/{orderID}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve details of a specific order by its ID. Requires authentication. User can only retrieve their own orders.",
+                "description": "Retrieve details of a specific order by its ID for a specific user. The {id} in the path is validated against the authenticated user ID from the token.",
                 "produces": [
                     "application/json"
                 ],
@@ -492,8 +520,16 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "Order ID",
+                        "description": "User ID",
                         "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "Order ID",
+                        "name": "orderID",
                         "in": "path",
                         "required": true
                     }
@@ -506,13 +542,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid order ID format",
+                        "description": "Invalid ID format",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (trying to access another user's order)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -537,7 +579,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update details of an existing order by its ID. Requires authentication. User can only update their own orders.",
+                "description": "Update order details for a specific user's order. The {id} in the path is validated against the authenticated user ID from the token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -552,13 +594,21 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "Order ID",
+                        "description": "User ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Order data to update",
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "Order ID",
+                        "name": "orderID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Order update data",
                         "name": "order",
                         "in": "body",
                         "required": true,
@@ -569,19 +619,93 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order updated successfully",
+                        "description": "Updated order",
                         "schema": {
                             "$ref": "#/definitions/order_model.OrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input data or order ID format",
+                        "description": "Invalid input data or ID format",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (trying to update another user's order)",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found or access denied",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an order by ID for a specific user. The {id} in the path is validated against the authenticated user ID from the token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Delete an order",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "description": "Order ID",
+                        "name": "orderID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Order deleted"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (trying to delete another user's order)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -640,62 +764,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Invalid credentials",
-                        "schema": {
-                            "$ref": "#/definitions/common_handler.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/common_handler.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/orders/{id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete an order by its ID. Requires authentication. User can only delete their own orders.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Orders"
-                ],
-                "summary": "Delete an order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "uint",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Order deleted successfully"
-                    },
-                    "400": {
-                        "description": "Invalid order ID format",
-                        "schema": {
-                            "$ref": "#/definitions/common_handler.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/common_handler.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Order not found or access denied",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }

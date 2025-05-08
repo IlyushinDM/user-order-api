@@ -10,15 +10,15 @@ import (
 
 	"github.com/IlyushinDM/user-order-api/internal/handlers/order_handler"
 	"github.com/IlyushinDM/user-order-api/internal/handlers/user_handler"
-	middleware "github.com/IlyushinDM/user-order-api/internal/middleware/auth_middleware"
-	"github.com/IlyushinDM/user-order-api/internal/middleware/logger_middleware"
+	auth_mw "github.com/IlyushinDM/user-order-api/internal/middleware/auth_middleware"
+	log_mw "github.com/IlyushinDM/user-order-api/internal/middleware/logger_middleware"
 	"github.com/IlyushinDM/user-order-api/internal/repository/database"
 	"github.com/IlyushinDM/user-order-api/internal/repository/order_db"
 	"github.com/IlyushinDM/user-order-api/internal/repository/user_db"
 	"github.com/IlyushinDM/user-order-api/internal/services/order_service"
 	"github.com/IlyushinDM/user-order-api/internal/services/user_service"
-	"github.com/IlyushinDM/user-order-api/internal/utils/config_util"
-	"github.com/IlyushinDM/user-order-api/internal/utils/logger_util"
+	conf_u "github.com/IlyushinDM/user-order-api/internal/utils/config_util"
+	log_u "github.com/IlyushinDM/user-order-api/internal/utils/logger_util"
 
 	_ "github.com/IlyushinDM/user-order-api/docs"
 )
@@ -41,13 +41,13 @@ import (
 // @schemes http https
 
 // @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
+// @in заголовок
+// @name Авторизация
 // @description Введите "Bearer" с пробелом и JWT токеном. Пример: "Bearer {token}"
 func main() {
 	// --- Конфигурация и логирование ---
-	log := logger_util.SetupLogger()
-	config_util.LoadConfig(log)
+	log := log_u.SetupLogger()
+	conf_u.LoadConfig(log)
 
 	// --- Подключение к базе данных ---
 	db, err := database.InitDB(log)
@@ -84,7 +84,7 @@ func main() {
 
 	// --- Middleware ---
 	router.Use(gin.Recovery())
-	router.Use(logger_middleware.LoggerMiddleware(log))
+	router.Use(log_mw.LoggerMiddleware(log))
 
 	// --- Маршруты ---
 
@@ -100,26 +100,23 @@ func main() {
 
 	// API маршруты (защищенные JWT)
 	api := router.Group("/api")
-	api.Use(middleware.AuthMiddleware(log)) // JWT аутентификация для всех маршрутов /api
+	api.Use(auth_mw.AuthMiddleware(log))
 	{
 		// Маршруты пользователей
 		userRoutes := api.Group("/users")
 		{
-			userRoutes.POST("", userHandler.CreateUser)
 			userRoutes.GET("", userHandler.GetAllUsers)
+
 			userRoutes.GET("/:id", userHandler.GetUserByID)
 			userRoutes.PUT("/:id", userHandler.UpdateUser)
 			userRoutes.DELETE("/:id", userHandler.DeleteUser)
-		}
 
-		// Маршруты заказов
-		orderRoutes := api.Group("/orders")
-		{
-			orderRoutes.POST("", orderHandler.CreateOrder)
-			orderRoutes.GET("", orderHandler.GetAllOrdersByUser)
-			orderRoutes.GET("/:id", orderHandler.GetOrderByID)
-			orderRoutes.PUT("/:id", orderHandler.UpdateOrder)
-			orderRoutes.DELETE("/:id", orderHandler.DeleteOrder)
+			// Маршруты заказов для конкретного пользователя
+			userRoutes.POST("/:id/orders", orderHandler.CreateOrder)
+			userRoutes.GET("/:id/orders", orderHandler.GetAllOrdersByUser)
+			userRoutes.GET("/:id/orders/:orderID", orderHandler.GetOrderByID)
+			userRoutes.PUT("/:id/orders/:orderID", orderHandler.UpdateOrder)
+			userRoutes.DELETE("/:id/orders/:orderID", orderHandler.DeleteOrder)
 		}
 	}
 

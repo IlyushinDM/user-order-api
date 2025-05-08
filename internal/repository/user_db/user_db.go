@@ -19,17 +19,17 @@ type UserRepository interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]user_model.User, int64, error)
 }
 
-type gormUserRepository struct {
+type GormUserRepository struct {
 	db  *gorm.DB
 	log *logrus.Logger
 }
 
 // NewGormUserRepository creates a new user repository using GORM.
 func NewGormUserRepository(db *gorm.DB, log *logrus.Logger) UserRepository {
-	return &gormUserRepository{db: db, log: log}
+	return &GormUserRepository{db: db, log: log}
 }
 
-func (r *gormUserRepository) Create(ctx context.Context, user *user_model.User) error {
+func (r *GormUserRepository) Create(ctx context.Context, user *user_model.User) error {
 	logger := r.log.WithContext(ctx).WithField("method", "UserRepository.Create")
 	result := r.db.WithContext(ctx).Create(user)
 	if result.Error != nil {
@@ -40,7 +40,7 @@ func (r *gormUserRepository) Create(ctx context.Context, user *user_model.User) 
 	return nil
 }
 
-func (r *gormUserRepository) Update(ctx context.Context, user *user_model.User) error {
+func (r *GormUserRepository) Update(ctx context.Context, user *user_model.User) error {
 	logger := r.log.WithContext(ctx).WithField("method", "UserRepository.Update").WithField("user_id", user.ID)
 	// Use Updates to only update non-zero fields or specified fields in a map
 	// Use Select("*") with Save() if you want to overwrite all fields, including clearing some.
@@ -65,7 +65,7 @@ func (r *gormUserRepository) Update(ctx context.Context, user *user_model.User) 
 	return nil
 }
 
-func (r *gormUserRepository) Delete(ctx context.Context, id uint) error {
+func (r *GormUserRepository) Delete(ctx context.Context, id uint) error {
 	logger := r.log.WithContext(ctx).WithField("method", "UserRepository.Delete").WithField("user_id", id)
 	// GORM's default Delete performs a soft delete if the model has DeletedAt field
 	result := r.db.WithContext(ctx).Delete(&user_model.User{}, id)
@@ -81,7 +81,7 @@ func (r *gormUserRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (r *gormUserRepository) GetByID(ctx context.Context, id uint) (*user_model.User, error) {
+func (r *GormUserRepository) GetByID(ctx context.Context, id uint) (*user_model.User, error) {
 	logger := r.log.WithContext(ctx).WithField("method", "UserRepository.GetByID").WithField("user_id", id)
 	var user user_model.User
 	// Use Preload to load associated orders if needed, e.g., r.db.WithContext(ctx).Preload("Orders").First(&user, id)
@@ -98,7 +98,7 @@ func (r *gormUserRepository) GetByID(ctx context.Context, id uint) (*user_model.
 	return &user, nil
 }
 
-func (r *gormUserRepository) GetByEmail(ctx context.Context, email string) (*user_model.User, error) {
+func (r *GormUserRepository) GetByEmail(ctx context.Context, email string) (*user_model.User, error) {
 	logger := r.log.WithContext(ctx).WithField("method", "UserRepository.GetByEmail").WithField("email", email)
 	var user user_model.User
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&user)
@@ -114,7 +114,7 @@ func (r *gormUserRepository) GetByEmail(ctx context.Context, email string) (*use
 	return &user, nil
 }
 
-func (r *gormUserRepository) GetAll(
+func (r *GormUserRepository) GetAll(
 	ctx context.Context,
 	page, limit int,
 	filters map[string]any) ([]user_model.User, int64, error) {
