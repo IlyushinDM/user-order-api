@@ -1,10 +1,7 @@
 package user_model
 
 import (
-	"time"
-
 	"github.com/IlyushinDM/user-order-api/internal/models/order_model"
-	"gorm.io/gorm"
 )
 
 // User represents the user model in the database.
@@ -16,9 +13,6 @@ type User struct {
 	Age          int                 `gorm:"not null" json:"age" binding:"required,gt=0"`
 	PasswordHash string              `gorm:"not null" json:"-"` // Never expose hash
 	Orders       []order_model.Order `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"orders,omitempty"`
-	CreatedAt    time.Time           `json:"created_at"`
-	UpdatedAt    time.Time           `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt      `gorm:"index" json:"-"` // Soft delete support
 }
 
 // UserResponse defines the data returned for a user (excluding sensitive info).
