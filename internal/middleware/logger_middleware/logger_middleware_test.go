@@ -1,9 +1,11 @@
-package logger_middleware
+package logger_middleware_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	log_mw "github.com/IlyushinDM/user-order-api/internal/middleware/logger_middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -18,7 +20,7 @@ func TestLoggerMiddleware(t *testing.T) {
 	// Инициализируем Gin в тестовом режиме
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.Use(LoggerMiddleware(log))
+	r.Use(log_mw.LoggerMiddleware(log))
 
 	// Добавляем тестовый маршрут для проверки установки логгера в контекст
 	r.GET("/test-context", func(c *gin.Context) {

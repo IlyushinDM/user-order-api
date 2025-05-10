@@ -3,14 +3,8 @@ definitions:
   common_handler.ErrorResponse:
     properties:
       details:
-        description: |-
-          Optional details about the error
-          example: Field 'email' is required
         type: string
       error:
-        description: |-
-          Error message
-          example: Invalid input data
         type: string
     type: object
   order_model.CreateOrderRequest:
@@ -193,7 +187,7 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: Пример сервера для управления пользователями и их заказами.
+  description: Сервер для управления пользователями и их заказами.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -203,32 +197,33 @@ info:
 paths:
   /api/users:
     get:
-      description: Retrieve a paginated and filtered list of users. Requires authentication.
+      description: Получение списка пользователей с пагинацией и фильтрацией. Требуется
+        аутентификация.
       parameters:
       - default: 1
-        description: Page number
+        description: Номер страницы
         in: query
         minimum: 1
         name: page
         type: integer
       - default: 10
-        description: Items per page
+        description: Количество элементов на странице
         in: query
         maximum: 100
         minimum: 1
         name: limit
         type: integer
-      - description: Minimum age filter
+      - description: Минимальный возраст для фильтрации
         in: query
         minimum: 1
         name: min_age
         type: integer
-      - description: Maximum age filter
+      - description: Максимальный возраст для фильтрации
         in: query
         minimum: 1
         name: max_age
         type: integer
-      - description: Name filter (case-insensitive, partial match)
+      - description: Фильтр по имени (без учета регистра, частичное совпадение)
         in: query
         name: name
         type: string
@@ -236,32 +231,32 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of users
+          description: Список пользователей
           schema:
             $ref: '#/definitions/user_model.PaginatedUsersResponse'
         "400":
-          description: Invalid query parameters
+          description: Неверные параметры запроса
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Неавторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all users
+      summary: Получение всех пользователей
       tags:
-      - Users
+      - Пользователи
     post:
       consumes:
       - application/json
-      description: Register a new user with name, email, age, and password.
+      description: Регистрация нового пользователя с именем, email, возрастом и паролем.
       parameters:
-      - description: User data
+      - description: Данные пользователя
         in: body
         name: user
         required: true
@@ -271,31 +266,31 @@ paths:
       - application/json
       responses:
         "201":
-          description: User created successfully
+          description: Пользователь успешно создан
           schema:
             $ref: '#/definitions/user_model.UserResponse'
         "400":
-          description: Invalid input data
+          description: Некорректные входные данные
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "409":
-          description: User with this email already exists
+          description: Пользователь с таким email уже существует
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
-      summary: Create a new user
+      summary: Создание нового пользователя
       tags:
-      - Users
+      - Пользователи
   /api/users/{id}:
     delete:
-      description: Delete a user by their ID. Requires authentication. User can only
-        delete their own account unless they are an admin (admin logic not implemented
-        here).
+      description: Удаление пользователя по его ID. Требуется аутентификация. Пользователь
+        может удалить только свою учетную запись, если он не является администратором
+        (логика администратора здесь не реализована).
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
@@ -305,36 +300,37 @@ paths:
       - application/json
       responses:
         "204":
-          description: User deleted successfully
+          description: Пользователь успешно удален
         "400":
-          description: Invalid user ID format
+          description: Неверный формат ID пользователя
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Неавторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to delete another user)
+          description: Запрещено (попытка удалить другого пользователя)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
-          description: User not found
+          description: Пользователь не найден
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Delete a user
+      summary: Удаление пользователя
       tags:
-      - Users
+      - Пользователи
     get:
-      description: Retrieve details of a specific user by their ID. Requires authentication.
+      description: Получение информации о конкретном пользователе по его ID. Требуется
+        аутентификация.
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
@@ -344,44 +340,44 @@ paths:
       - application/json
       responses:
         "200":
-          description: User details
+          description: Информация о пользователе
           schema:
             $ref: '#/definitions/user_model.UserResponse'
         "400":
-          description: Invalid user ID format
+          description: Неверный формат ID пользователя
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Неавторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
-          description: User not found
+          description: Пользователь не найден
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get user by ID
+      summary: Получение пользователя по ID
       tags:
-      - Users
+      - Пользователи
     put:
       consumes:
       - application/json
-      description: Update details of an existing user by ID. Requires authentication.
-        User can only update their own details unless they are an admin (admin logic
-        not implemented here).
+      description: Обновление информации о существующем пользователе по ID. Требуется
+        аутентификация. Пользователь может обновлять только свои данные, если он не
+        является администратором (логика администратора здесь не реализована).
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
         required: true
         type: integer
-      - description: User data to update
+      - description: Данные пользователя для обновления
         in: body
         name: user
         required: true
@@ -391,42 +387,42 @@ paths:
       - application/json
       responses:
         "200":
-          description: User updated successfully
+          description: Пользователь успешно обновлен
           schema:
             $ref: '#/definitions/user_model.UserResponse'
         "400":
-          description: Invalid input data or user ID format
+          description: Некорректные входные данные или неверный формат ID пользователя
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Неавторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to update another user - simplistic check)
+          description: Запрещено (попытка обновить другого пользователя - упрощенная
+            проверка)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
-          description: User not found
+          description: Пользователь не найден
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "409":
-          description: Email already taken by another user
+          description: Email уже используется другим пользователем
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Update a user
+      summary: Обновление пользователя
       tags:
-      - Users
+      - Пользователи
   /api/users/{id}/orders:
     get:
-      description: Retrieve paginated list of user's orders. The {id} in the path
-        is validated against the authenticated user ID from the token.
+      description: Gets paginated list of orders for a user.
       parameters:
       - description: User ID
         format: uint
@@ -455,7 +451,7 @@ paths:
           schema:
             $ref: '#/definitions/order_model.PaginatedOrdersResponse'
         "400":
-          description: Invalid query parameters or user ID format in URL
+          description: Invalid query params or user ID format
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
@@ -463,7 +459,7 @@ paths:
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to access another user's orders)
+          description: Forbidden (attempt to access another user's orders)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
@@ -478,8 +474,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new order for the authenticated user. The {id} in the
-        path is validated against the authenticated user ID from the token.
+      description: Creates a new order for the authenticated user. Checks {id} in
+        path against the authenticated user ID from token.
       parameters:
       - description: User ID
         format: uint
@@ -497,11 +493,11 @@ paths:
       - application/json
       responses:
         "201":
-          description: Order created successfully
+          description: Order successfully created
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid input data or user ID format in URL
+          description: Invalid input or invalid user ID format in URL
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
@@ -509,7 +505,7 @@ paths:
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to create order for another user)
+          description: Forbidden (attempt to create order for another user)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
@@ -518,13 +514,12 @@ paths:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Create a new order
+      summary: Create new order
       tags:
       - Orders
   /api/users/{id}/orders/{orderID}:
     delete:
-      description: Delete an order by ID for a specific user. The {id} in the path
-        is validated against the authenticated user ID from the token.
+      description: Deletes order by ID for specified user.
       parameters:
       - description: User ID
         format: uint
@@ -552,7 +547,7 @@ paths:
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to delete another user's order)
+          description: Forbidden (attempt to delete another user's order)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
@@ -569,9 +564,7 @@ paths:
       tags:
       - Orders
     get:
-      description: Retrieve details of a specific order by its ID for a specific user.
-        The {id} in the path is validated against the authenticated user ID from the
-        token.
+      description: Gets specific order information by its ID for specified user.
       parameters:
       - description: User ID
         format: uint
@@ -589,7 +582,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Order details
+          description: Order info
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
@@ -601,7 +594,7 @@ paths:
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to access another user's order)
+          description: Forbidden (attempt to access another user's order)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
@@ -620,8 +613,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update order details for a specific user's order. The {id} in the
-        path is validated against the authenticated user ID from the token.
+      description: Updates the order details for a specific order of a user.
       parameters:
       - description: User ID
         format: uint
@@ -649,7 +641,7 @@ paths:
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid input data or ID format
+          description: Invalid input or ID format
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
@@ -657,7 +649,7 @@ paths:
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (trying to update another user's order)
+          description: Forbidden (attempt to update another user's order)
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
@@ -677,9 +669,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate a user with email and password, returns a JWT token.
+      description: Аутентификация пользователя с использованием email и пароля, возвращает
+        JWT токен.
       parameters:
-      - description: Login credentials
+      - description: Учетные данные для входа
         in: body
         name: credentials
         required: true
@@ -689,30 +682,30 @@ paths:
       - application/json
       responses:
         "200":
-          description: Login successful, includes JWT token
+          description: Вход выполнен успешно, включает JWT токен
           schema:
             $ref: '#/definitions/user_model.LoginResponse'
         "400":
-          description: Invalid input data
+          description: Некорректные входные данные
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Invalid credentials
+          description: Неверные учетные данные
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
-      summary: User login
+      summary: Вход пользователя
       tags:
-      - Auth
+      - Аутентификация
 schemes:
 - http
 - https
 securityDefinitions:
   BearerAuth:
-    description: 'Введите "Bearer" с пробелом и JWT токеном. Пример: "Bearer {token}"'
+    description: 'Напиши "Bearer", пробел и JWT токен. Пример: "Bearer {token}"'
     in: header
     name: Authorization
     type: apiKey

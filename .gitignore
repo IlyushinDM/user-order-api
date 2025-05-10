@@ -21,6 +21,8 @@ user-order-api
 *.swo
 *.swn
 
+logs/
+
 # Файлы, вязанные с ОС
 .DS_Store
 Thumbs.db
@@ -35,4 +37,5 @@ Thumbs.db
 
 *~
 coverage.out
+coverage
 .env

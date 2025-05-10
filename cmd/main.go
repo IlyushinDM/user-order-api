@@ -1,32 +1,25 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
 	"os"
-	"strconv"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-
-	"github.com/IlyushinDM/user-order-api/internal/handlers/order_handler"
-	"github.com/IlyushinDM/user-order-api/internal/handlers/user_handler"
-	auth_mw "github.com/IlyushinDM/user-order-api/internal/middleware/auth_middleware"
-	log_mw "github.com/IlyushinDM/user-order-api/internal/middleware/logger_middleware"
-	"github.com/IlyushinDM/user-order-api/internal/repository/database"
-	"github.com/IlyushinDM/user-order-api/internal/repository/order_db"
-	"github.com/IlyushinDM/user-order-api/internal/repository/user_db"
-	"github.com/IlyushinDM/user-order-api/internal/services/order_service"
-	"github.com/IlyushinDM/user-order-api/internal/services/user_service"
-	conf_u "github.com/IlyushinDM/user-order-api/internal/utils/config_util"
-	log_u "github.com/IlyushinDM/user-order-api/internal/utils/logger_util"
+	"github.com/IlyushinDM/user-order-api/internal/core"
+	"github.com/IlyushinDM/user-order-api/internal/utils/config_util"
+	"github.com/IlyushinDM/user-order-api/internal/utils/logger_util"
 
 	_ "github.com/IlyushinDM/user-order-api/docs"
 )
 
-// Объявления Swagger
 // @title User Order API
 // @version 1.0
-// @description Пример сервера для управления пользователями и их заказами.
+// @description Сервер для управления пользователями и их заказами.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -41,92 +34,101 @@ import (
 // @schemes http https
 
 // @securityDefinitions.apikey BearerAuth
-// @in заголовок
-// @name Авторизация
-// @description Введите "Bearer" с пробелом и JWT токеном. Пример: "Bearer {token}"
+// @in header
+// @name Authorization
+// @description Напиши "Bearer", пробел и JWT токен. Пример: "Bearer {token}"
 func main() {
-	// --- Конфигурация и логирование ---
-	log := log_u.SetupLogger()
-	conf_u.LoadConfig(log)
+	// 1. Инициализация логгера.
+	logger, cleanupLogger := logger_util.SetupLogger()
 
-	// --- Подключение к базе данных ---
-	db, err := database.InitDB(log)
-	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
-	}
-
-	// --- Инъекция зависимостей ---
-	jwtSecret := os.Getenv("JWT_SECRET")
-	jwtExpStr := os.Getenv("JWT_EXPIRATION")
-	jwtExp, err := strconv.Atoi(jwtExpStr)
-	if err != nil || jwtExp <= 0 {
-		jwtExp = 3600 // Дефолтное значение 3600 секунд (1 час)
-		log.Warnf("Некорректное JWT_EXPIRATION, используется значение по умолчанию: %d секунд", jwtExp)
-	}
-
-	// Инициализация репозиториев
-	userRepo := user_db.NewGormUserRepository(db, log)
-	orderRepo := order_db.NewGormOrderRepository(db, log)
-
-	// Инициализация сервисов
-	userService := user_service.NewUserService(userRepo, log, jwtSecret, jwtExp)
-	orderService := order_service.NewOrderService(orderRepo, userRepo, log)
-
-	// Инициализация обработчиков
-	userHandler := user_handler.NewUserHandler(userService, log)
-	orderHandler := order_handler.NewOrderHandler(orderService, log)
-
-	// --- Настройка роутера Gin ---
-	if os.Getenv("GIN_MODE") == "release" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-	router := gin.New()
-
-	// --- Middleware ---
-	router.Use(gin.Recovery())
-	router.Use(log_mw.LoggerMiddleware(log))
-
-	// --- Маршруты ---
-
-	// Документация Swagger (публичная)
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// Маршруты аутентификации (публичные)
-	authRoutes := router.Group("/auth")
-	{
-		authRoutes.POST("/login", userHandler.LoginUser)
-		authRoutes.POST("/register", userHandler.CreateUser)
-	}
-
-	// API маршруты (защищенные JWT)
-	api := router.Group("/api")
-	api.Use(auth_mw.AuthMiddleware(log))
-	{
-		// Маршруты пользователей
-		userRoutes := api.Group("/users")
-		{
-			userRoutes.GET("", userHandler.GetAllUsers)
-
-			userRoutes.GET("/:id", userHandler.GetUserByID)
-			userRoutes.PUT("/:id", userHandler.UpdateUser)
-			userRoutes.DELETE("/:id", userHandler.DeleteUser)
-
-			// Маршруты заказов для конкретного пользователя
-			userRoutes.POST("/:id/orders", orderHandler.CreateOrder)
-			userRoutes.GET("/:id/orders", orderHandler.GetAllOrdersByUser)
-			userRoutes.GET("/:id/orders/:orderID", orderHandler.GetOrderByID)
-			userRoutes.PUT("/:id/orders/:orderID", orderHandler.UpdateOrder)
-			userRoutes.DELETE("/:id/orders/:orderID", orderHandler.DeleteOrder)
+	defer func() {
+		if err := cleanupLogger(); err != nil {
+			log.Printf("Ошибка при закрытии логгера: %v\n", err)
 		}
+	}()
+
+	// 2. Загрузка конфигурации.
+	cfg, err := config_util.LoadConfig(logger)
+	if err != nil {
+		logger.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
 
-	// --- Запуск сервера ---
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	// 3. Инициализация приложения с передачей логгера и конфигурации.
+	app, err := core.NewApp(logger, cfg)
+	if err != nil {
+		logger.Fatalf("Ошибка инициализации приложения: %v", err)
 	}
-	log.Infof("Сервер запускается на порту %s", port)
-	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Ошибка запуска сервера: %v", err)
+
+	// 4. Запуск и управление жизненным циклом сервера.
+	if err := runApp(app); err != nil {
+		logger.Fatalf("Ошибка во время выполнения приложения: %v", err)
 	}
+
+	app.Logger.Info("Приложение завершило работу.")
+}
+
+// runApp настраивает маршрутизатор, запускает HTTP сервер и обрабатывает graceful shutdown.
+func runApp(app *core.App) error {
+	// 1. Установка маршрутизатора.
+	app.Router = core.SetupRouter(app)
+
+	// 2. Создание экземпляра http.Server с таймаутами из конфигурации.
+	srv := &http.Server{
+		Addr:    ":" + app.Config.Port,
+		Handler: app.Router,
+		// Используем сконфигурированные таймауты сервера.
+		// Значения в Config предполагаются в int (секунды), преобразуем в time.Duration.
+		ReadTimeout:    time.Duration(app.Config.ReadTimeout) * time.Second,
+		WriteTimeout:   time.Duration(app.Config.WriteTimeout) * time.Second,
+		IdleTimeout:    time.Duration(app.Config.IdleTimeout) * time.Second,
+		MaxHeaderBytes: app.Config.MaxHeaderBytes,
+	}
+
+	// 3. Запуск сервера в отдельной горутине.
+	serverErr := make(chan error, 1)
+	go func() {
+		app.Logger.Infof("Сервер запускается на порту %s в режиме %s...", app.Config.Port, app.Config.GinMode)
+		app.Logger.Infof("API доступен по адресу: http://localhost:%s", app.Config.Port)
+		app.Logger.Infof("Ссылка для перехода в документацию: http://localhost:%s/swagger/index.html", app.Config.Port)
+
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			app.Logger.Errorf("Ошибка запуска сервера: %v", err)
+			serverErr <- fmt.Errorf("ошибка запуска сервера: %w", err)
+		} else if err == http.ErrServerClosed {
+			app.Logger.Info("HTTP сервер успешно остановлен после graceful shutdown.")
+			serverErr <- nil
+		} else {
+			serverErr <- nil
+		}
+		close(serverErr)
+	}()
+
+	// 4. Ожидание сигналов операционной системы для graceful shutdown.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// 5. Ожидание сигнала остановки или критической ошибки сервера.
+	select {
+	case err := <-serverErr:
+		app.Logger.Errorf("Сервер завершил работу с ошибкой до получения сигнала остановки: %v", err)
+		return fmt.Errorf("сервер завершился с ошибкой: %w", err)
+	case <-quit:
+		app.Logger.Info("Получен сигнал остановки, запускается graceful shutdown...")
+
+		// Создаем контекст с таймаутом, используя сконфигурированное значение.
+		ctx, cancel := context.WithTimeout(context.Background(), app.Config.ShutdownTimeout)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			app.Logger.Errorf("Ошибка при graceful shutdown сервера: %v", err)
+			return fmt.Errorf("ошибка при graceful shutdown: %w", err)
+		}
+
+		app.Logger.Info("Graceful shutdown завершен. Ожидание завершения горутины сервера...")
+		<-serverErr
+		app.Logger.Info("Горутина сервера завершилась.")
+	}
+
+	return nil
 }

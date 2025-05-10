@@ -1,4 +1,4 @@
-package user_db_test
+package user_rep_test
 
 // import (
 // 	"context"
@@ -6,7 +6,7 @@ package user_db_test
 
 // 	// Библиотека для мокинга SQL драйвера (альтернативный подход)
 // 	"github.com/IlyushinDM/user-order-api/internal/models/user_model"
-// 	"github.com/IlyushinDM/user-order-api/internal/repository/user_db" // Убедитесь, что путь импорта правильный
+// 	"github.com/IlyushinDM/user-order-api/internal/repository/user_rep" // Убедитесь, что путь импорта правильный
 // 	"github.com/sirupsen/logrus"
 // 	"github.com/stretchr/testify/assert"
 // 	"gorm.io/driver/sqlite" // Используем драйвер SQLite для in-memory тестов
@@ -53,9 +53,9 @@ package user_db_test
 
 // // setupTestRepository настраивает тестовое окружение для репозитория.
 // // Возвращает экземпляр UserRepository и функцию очистки.
-// func setupTestRepository(t *testing.T) (user_db.UserRepository, func()) {
+// func setupTestRepository(t *testing.T) (user_rep.UserRepository, func()) {
 // 	db, cleanup := setupTestDB(t)
-// 	repo := user_db.NewGormUserRepository(db, mockLog)
+// 	repo := user_rep.NewGormUserRepository(db, mockLog)
 // 	return repo, cleanup
 // }
 
@@ -185,7 +185,7 @@ package user_db_test
 
 // 	// Можно проверить наличие записи с непустым DeletedAt напрямую через Unscoped
 // 	// var deletedUser user_model.User
-// 	// result := repo.(*user_db.GormUserRepository).db.Unscoped().First(&deletedUser, userID)
+// 	// result := repo.(*user_rep.GormUserRepository).db.Unscoped().First(&deletedUser, userID)
 // 	// assert.NoError(t, result.Error, "Unscoped должен найти мягко удаленного пользователя")
 // 	// assert.NotNil(t, deletedUser.DeletedAt, "Поле DeletedAt должно быть установлено для мягко удаленного пользователя")
 // }

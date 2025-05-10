@@ -7,44 +7,52 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// LoggerMiddleware creates a Gin middleware for request logging using Logrus.
+// LoggerMiddleware создает Gin middleware для логирования запросов, используя предоставленный экземпляр логгера.
 func LoggerMiddleware(log *logrus.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Start timer
+		// Засекаем время начала обработки запроса
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 
-		// Set logger instance in context for handlers to use
+		// Устанавливаем предоставленный логгер в контекст запроса.
+		// Это позволяет обработчикам запросов получить доступ к тому же экземпляру логгера.
 		c.Set("logger", log)
 
-		// Process request
+		// Обрабатываем запрос, передавая управление следующему middleware или обработчику
 		c.Next()
 
-		// Log request details after handler execution
-		stop := time.Now()
-		latency := stop.Sub(start)
-		clientIP := c.ClientIP()
-		method := c.Request.Method
-		statusCode := c.Writer.Status()
-		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
+		// Логируем детали запроса после выполнения всех обработчиков в цепочке.
+		stop := time.Now()              // Время завершения обработки
+		latency := stop.Sub(start)      // Вычисляем задержку (время обработки)
+		clientIP := c.ClientIP()        // IP-адрес клиента
+		method := c.Request.Method      // Метод HTTP запроса (GET, POST и т.д.)
+		statusCode := c.Writer.Status() // Статусный код ответа
+		errorMessages := c.Errors.ByType(gin.ErrorTypePrivate).String()
 
+		// Восстанавливаем полный путь запроса с параметрами, если они были
 		if raw != "" {
 			path = path + "?" + raw
 		}
 
+		// Создаем log entry с дополнительными полями, специфичными для HTTP запроса.
 		entry := log.WithFields(logrus.Fields{
-			"statusCode": statusCode,
-			"latency":    latency,
-			"clientIP":   clientIP,
-			"method":     method,
-			"path":       path,
+			"statusCode": statusCode, // Статусный код ответа
+			"latency":    latency,    // Задержка обработки запроса
+			"clientIP":   clientIP,   // IP-адрес клиента
+			"method":     method,     // Метод HTTP запроса
+			"path":       path,       // Полный путь запроса
 		})
 
-		if errorMessage != "" {
-			entry.Error(errorMessage)
+		// Определяем уровень логирования на основе статусного кода и наличия ошибок.
+		if len(c.Errors) > 0 {
+			entry.Error(errorMessages)
+		} else if statusCode >= 500 {
+			entry.Error("Ошибка сервера")
+		} else if statusCode >= 400 {
+			entry.Warn("Ошибка клиента")
 		} else {
-			entry.Info("Request completed")
+			entry.Info("Запрос успешно выполнен")
 		}
 	}
 }

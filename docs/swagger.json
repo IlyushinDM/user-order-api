@@ -5,7 +5,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "Пример сервера для управления пользователями и их заказами.",
+        "description": "Сервер для управления пользователями и их заказами.",
         "title": "User Order API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
@@ -29,20 +29,20 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve a paginated and filtered list of users. Requires authentication.",
+                "description": "Получение списка пользователей с пагинацией и фильтрацией. Требуется аутентификация.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Пользователи"
                 ],
-                "summary": "Get all users",
+                "summary": "Получение всех пользователей",
                 "parameters": [
                     {
                         "minimum": 1,
                         "type": "integer",
                         "default": 1,
-                        "description": "Page number",
+                        "description": "Номер страницы",
                         "name": "page",
                         "in": "query"
                     },
@@ -51,52 +51,52 @@
                         "minimum": 1,
                         "type": "integer",
                         "default": 10,
-                        "description": "Items per page",
+                        "description": "Количество элементов на странице",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "minimum": 1,
                         "type": "integer",
-                        "description": "Minimum age filter",
+                        "description": "Минимальный возраст для фильтрации",
                         "name": "min_age",
                         "in": "query"
                     },
                     {
                         "minimum": 1,
                         "type": "integer",
-                        "description": "Maximum age filter",
+                        "description": "Максимальный возраст для фильтрации",
                         "name": "max_age",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Name filter (case-insensitive, partial match)",
+                        "description": "Фильтр по имени (без учета регистра, частичное совпадение)",
                         "name": "name",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of users",
+                        "description": "Список пользователей",
                         "schema": {
                             "$ref": "#/definitions/user_model.PaginatedUsersResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid query parameters",
+                        "description": "Неверные параметры запроса",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -104,7 +104,7 @@
                 }
             },
             "post": {
-                "description": "Register a new user with name, email, age, and password.",
+                "description": "Регистрация нового пользователя с именем, email, возрастом и паролем.",
                 "consumes": [
                     "application/json"
                 ],
@@ -112,12 +112,12 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Пользователи"
                 ],
-                "summary": "Create a new user",
+                "summary": "Создание нового пользователя",
                 "parameters": [
                     {
-                        "description": "User data",
+                        "description": "Данные пользователя",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -128,25 +128,25 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "User created successfully",
+                        "description": "Пользователь успешно создан",
                         "schema": {
                             "$ref": "#/definitions/user_model.UserResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input data",
+                        "description": "Некорректные входные данные",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "User with this email already exists",
+                        "description": "Пользователь с таким email уже существует",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -161,19 +161,19 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve details of a specific user by their ID. Requires authentication.",
+                "description": "Получение информации о конкретном пользователе по его ID. Требуется аутентификация.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Пользователи"
                 ],
-                "summary": "Get user by ID",
+                "summary": "Получение пользователя по ID",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -181,31 +181,31 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "User details",
+                        "description": "Информация о пользователе",
                         "schema": {
                             "$ref": "#/definitions/user_model.UserResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid user ID format",
+                        "description": "Неверный формат ID пользователя",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "User not found",
+                        "description": "Пользователь не найден",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -218,7 +218,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update details of an existing user by ID. Requires authentication. User can only update their own details unless they are an admin (admin logic not implemented here).",
+                "description": "Обновление информации о существующем пользователе по ID. Требуется аутентификация. Пользователь может обновлять только свои данные, если он не является администратором (логика администратора здесь не реализована).",
                 "consumes": [
                     "application/json"
                 ],
@@ -226,20 +226,20 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Пользователи"
                 ],
-                "summary": "Update a user",
+                "summary": "Обновление пользователя",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "User data to update",
+                        "description": "Данные пользователя для обновления",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -250,43 +250,43 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "User updated successfully",
+                        "description": "Пользователь успешно обновлен",
                         "schema": {
                             "$ref": "#/definitions/user_model.UserResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input data or user ID format",
+                        "description": "Некорректные входные данные или неверный формат ID пользователя",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to update another user - simplistic check)",
+                        "description": "Запрещено (попытка обновить другого пользователя - упрощенная проверка)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "User not found",
+                        "description": "Пользователь не найден",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "Email already taken by another user",
+                        "description": "Email уже используется другим пользователем",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -299,19 +299,19 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a user by their ID. Requires authentication. User can only delete their own account unless they are an admin (admin logic not implemented here).",
+                "description": "Удаление пользователя по его ID. Требуется аутентификация. Пользователь может удалить только свою учетную запись, если он не является администратором (логика администратора здесь не реализована).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Пользователи"
                 ],
-                "summary": "Delete a user",
+                "summary": "Удаление пользователя",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -319,34 +319,34 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "User deleted successfully"
+                        "description": "Пользователь успешно удален"
                     },
                     "400": {
-                        "description": "Invalid user ID format",
+                        "description": "Неверный формат ID пользователя",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to delete another user)",
+                        "description": "Запрещено (попытка удалить другого пользователя)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "User not found",
+                        "description": "Пользователь не найден",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -361,7 +361,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve paginated list of user's orders. The {id} in the path is validated against the authenticated user ID from the token.",
+                "description": "Gets paginated list of orders for a user.",
                 "produces": [
                     "application/json"
                 ],
@@ -404,7 +404,7 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid query parameters or user ID format in URL",
+                        "description": "Invalid query params or user ID format",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -416,7 +416,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to access another user's orders)",
+                        "description": "Forbidden (attempt to access another user's orders)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -435,7 +435,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new order for the authenticated user. The {id} in the path is validated against the authenticated user ID from the token.",
+                "description": "Creates a new order for the authenticated user. Checks {id} in path against the authenticated user ID from token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -445,7 +445,7 @@
                 "tags": [
                     "Orders"
                 ],
-                "summary": "Create a new order",
+                "summary": "Create new order",
                 "parameters": [
                     {
                         "type": "integer",
@@ -467,13 +467,13 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "Order created successfully",
+                        "description": "Order successfully created",
                         "schema": {
                             "$ref": "#/definitions/order_model.OrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input data or user ID format in URL",
+                        "description": "Invalid input or invalid user ID format in URL",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -485,7 +485,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to create order for another user)",
+                        "description": "Forbidden (attempt to create order for another user)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -506,7 +506,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve details of a specific order by its ID for a specific user. The {id} in the path is validated against the authenticated user ID from the token.",
+                "description": "Gets specific order information by its ID for specified user.",
                 "produces": [
                     "application/json"
                 ],
@@ -534,7 +534,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order details",
+                        "description": "Order info",
                         "schema": {
                             "$ref": "#/definitions/order_model.OrderResponse"
                         }
@@ -552,7 +552,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to access another user's order)",
+                        "description": "Forbidden (attempt to access another user's order)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -577,7 +577,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update order details for a specific user's order. The {id} in the path is validated against the authenticated user ID from the token.",
+                "description": "Updates the order details for a specific order of a user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -623,7 +623,7 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid input data or ID format",
+                        "description": "Invalid input or ID format",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -635,7 +635,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to update another user's order)",
+                        "description": "Forbidden (attempt to update another user's order)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -660,7 +660,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete an order by ID for a specific user. The {id} in the path is validated against the authenticated user ID from the token.",
+                "description": "Deletes order by ID for specified user.",
                 "produces": [
                     "application/json"
                 ],
@@ -703,7 +703,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden (trying to delete another user's order)",
+                        "description": "Forbidden (attempt to delete another user's order)",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -725,7 +725,7 @@
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate a user with email and password, returns a JWT token.",
+                "description": "Аутентификация пользователя с использованием email и пароля, возвращает JWT токен.",
                 "consumes": [
                     "application/json"
                 ],
@@ -733,12 +733,12 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Аутентификация"
                 ],
-                "summary": "User login",
+                "summary": "Вход пользователя",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Учетные данные для входа",
                         "name": "credentials",
                         "in": "body",
                         "required": true,
@@ -749,25 +749,25 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Login successful, includes JWT token",
+                        "description": "Вход выполнен успешно, включает JWT токен",
                         "schema": {
                             "$ref": "#/definitions/user_model.LoginResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input data",
+                        "description": "Некорректные входные данные",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials",
+                        "description": "Неверные учетные данные",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -781,11 +781,9 @@
             "type": "object",
             "properties": {
                 "details": {
-                    "description": "Optional details about the error\nexample: Field 'email' is required",
                     "type": "string"
                 },
                 "error": {
-                    "description": "Error message\nexample: Invalid input data",
                     "type": "string"
                 }
             }
@@ -988,7 +986,7 @@
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Введите \"Bearer\" с пробелом и JWT токеном. Пример: \"Bearer {token}\"",
+            "description": "Напиши \"Bearer\", пробел и JWT токен. Пример: \"Bearer {token}\"",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

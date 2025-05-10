@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"gorm.io/gorm"
-
 	"github.com/IlyushinDM/user-order-api/internal/handlers/common_handler"
 	"github.com/IlyushinDM/user-order-api/internal/models/order_model"
 	"github.com/IlyushinDM/user-order-api/internal/services/order_service"
@@ -15,86 +13,97 @@ import (
 )
 
 type OrderHandler struct {
-	orderService order_service.OrderService
-	log          *logrus.Logger
+	orderService  order_service.OrderService
+	commonHandler *common_handler.CommonHandler
+	log           *logrus.Logger
 }
 
-func NewOrderHandler(orderService order_service.OrderService, log *logrus.Logger) *OrderHandler {
-	return &OrderHandler{orderService: orderService, log: log}
+// NewOrderHandler создает новый экземпляр OrderHandler с проверкой входных параметров
+func NewOrderHandler(
+	orderService order_service.OrderService,
+	commonHandler *common_handler.CommonHandler,
+	log *logrus.Logger,
+) *OrderHandler {
+	if orderService == nil {
+		logrus.Fatal("orderService равен nil в NewOrderHandler")
+	}
+	if commonHandler == nil {
+		logrus.Fatal("commonHandler равен nil в NewOrderHandler")
+	}
+	if log == nil {
+		defaultLog := logrus.New()
+		defaultLog.SetLevel(logrus.InfoLevel)
+		defaultLog.Warn("Logger равен nil в NewOrderHandler, используется logger по умолчанию")
+		log = defaultLog
+	}
+	return &OrderHandler{orderService, commonHandler, log}
 }
 
-// checkUserIDMatch compares the userID in the URL path with the authenticated userID from the context.
-// Returns the authenticated userID and true if they match or context is missing, otherwise returns 0 and false.
+// checkUserIDMatch проверяет соответствие userID из URL и аутентифицированного userID из контекста
 func (h *OrderHandler) checkUserIDMatch(c *gin.Context) (uint, bool) {
 	authUserID, exists := c.Get("userID")
 	if !exists {
-		h.log.Error("Authentication context error: userID not found")
-		c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
-			Error: "Authentication context error",
-		})
-		return 0, false // Authentication context missing
+		h.log.Error("Ошибка аутентификации: userID не найден в контексте")
+		c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка аутентификации"})
+		return 0, false
 	}
 
-	// Use "id" instead of "userID" to match the route parameter name in main.go
 	urlUserIDStr := c.Param("id")
 	urlUserID, err := strconv.ParseUint(urlUserIDStr, 10, 32)
 	if err != nil {
-		h.log.WithError(err).Warnf("Invalid userID format in URL: '%s'", urlUserIDStr)
-		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{
-			Error: "Invalid user ID format in URL",
-		})
-		return 0, false // Invalid URL user ID format
+		h.log.WithError(err).Warnf("Неверный формат userID в URL: '%s'", urlUserIDStr)
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректный формат ID пользователя"})
+		return 0, false
 	}
 
 	if uint(urlUserID) != authUserID.(uint) {
-		h.log.Warnf("Forbidden access attempt: Authenticated user %d trying to access user %d's resources", authUserID.(uint), urlUserID)
-		c.JSON(http.StatusForbidden, common_handler.ErrorResponse{
-			Error: "Forbidden: You can only access your own orders",
-		})
-		return 0, false // User ID mismatch
+		h.log.Warnf("Доступ запрещен: пользователь %d пытается получить доступ к данным пользователя %d", authUserID.(uint), urlUserID)
+		c.JSON(http.StatusForbidden, common_handler.ErrorResponse{Error: "Доступ запрещен"})
+		return 0, false
 	}
 
-	return authUserID.(uint), true // Match
+	return authUserID.(uint), true
 }
 
 // CreateOrder godoc
-// @Summary Create a new order
-// @Description Create a new order for the authenticated user. The {id} in the path is validated against the authenticated user ID from the token.
-// @Tags Orders
+// @Summary Создание нового заказа
+// @Description Создает новый заказ для аутентифицированного пользователя
+// @Tags Заказы
 // @Accept json
 // @Produce json
-// @Param id path int true "User ID" Format(uint) // Changed from userID to id
-// @Param order body order_model.CreateOrderRequest true "Order data (product, quantity, price)"
-// @Success 201 {object} order_model.OrderResponse "Order created successfully"
-// @Failure 400 {object} common_handler.ErrorResponse "Invalid input data or user ID format in URL"
-// @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
-// @Failure 403 {object} common_handler.ErrorResponse "Forbidden (trying to create order for another user)"
-// @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
+// @Param id path int true "ID пользователя" Format(uint)
+// @Param order body order_model.CreateOrderRequest true "Данные заказа"
+// @Success 201 {object} order_model.OrderResponse "Заказ успешно создан"
+// @Failure 400 {object} common_handler.ErrorResponse "Некорректные входные данные"
+// @Failure 401 {object} common_handler.ErrorResponse "Не авторизован"
+// @Failure 403 {object} common_handler.ErrorResponse "Доступ запрещен"
+// @Failure 500 {object} common_handler.ErrorResponse "Внутренняя ошибка сервера"
 // @Security BearerAuth
-// @Router /api/users/{id}/orders [post] // Changed from /api/users/{userID}/orders
+// @Router /api/users/{id}/orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	authUserID, ok := h.checkUserIDMatch(c)
 	if !ok {
-		return // Response handled by checkUserIDMatch
+		return
 	}
 
 	var req order_model.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.log.WithError(err).Warn("CreateOrder: Bad request format")
-		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{
-			Error:   "Invalid input data",
-			Details: err.Error(),
-		})
+		h.log.WithError(err).Warn("Некорректный формат запроса")
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректные входные данные"})
 		return
 	}
 
-	// Use authUserID obtained from the context/token, validated against URL userID
 	order, err := h.orderService.CreateOrder(c.Request.Context(), authUserID, req)
 	if err != nil {
-		h.log.WithError(err).Errorf("CreateOrder: Failed for user %d", authUserID)
-		c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
-			Error: "Failed to create order",
-		})
+		h.log.WithError(err).Errorf("Ошибка при создании заказа для пользователя %d", authUserID)
+		switch {
+		case errors.Is(err, order_service.ErrInvalidServiceInput):
+			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: err.Error()})
+		case errors.Is(err, order_service.ErrServiceDatabaseError):
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка при создании заказа"})
+		default:
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
+		}
 		return
 	}
 
@@ -108,51 +117,47 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 }
 
 // GetOrderByID godoc
-// @Summary Get order by ID
-// @Description Retrieve details of a specific order by its ID for a specific user. The {id} in the path is validated against the authenticated user ID from the token.
-// @Tags Orders
+// @Summary Получение заказа по ID
+// @Description Возвращает информацию о конкретном заказе пользователя
+// @Tags Заказы
 // @Produce json
-// @Param id path int true "User ID" Format(uint) // Changed from userID to id
-// @Param orderID path int true "Order ID" Format(uint)
-// @Success 200 {object} order_model.OrderResponse "Order details"
-// @Failure 400 {object} common_handler.ErrorResponse "Invalid ID format"
-// @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
-// @Failure 403 {object} common_handler.ErrorResponse "Forbidden (trying to access another user's order)"
-// @Failure 404 {object} common_handler.ErrorResponse "Order not found or access denied"
-// @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
+// @Param id path int true "ID пользователя" Format(uint)
+// @Param orderID path int true "ID заказа" Format(uint)
+// @Success 200 {object} order_model.OrderResponse "Информация о заказе"
+// @Failure 400 {object} common_handler.ErrorResponse "Некорректный формат ID"
+// @Failure 401 {object} common_handler.ErrorResponse "Не авторизован"
+// @Failure 403 {object} common_handler.ErrorResponse "Доступ запрещен"
+// @Failure 404 {object} common_handler.ErrorResponse "Заказ не найден"
+// @Failure 500 {object} common_handler.ErrorResponse "Внутренняя ошибка сервера"
 // @Security BearerAuth
-// @Router /api/users/{id}/orders/{orderID} [get] // Changed from /api/users/{userID}/orders/{orderID}
+// @Router /api/users/{id}/orders/{orderID} [get]
 func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	authUserID, ok := h.checkUserIDMatch(c)
 	if !ok {
-		return // Response handled by checkUserIDMatch
-	}
-
-	// Read order ID using the new parameter name 'orderID'
-	orderIDStr := c.Param("orderID")
-	orderID, err := strconv.ParseUint(orderIDStr, 10, 32)
-	if err != nil {
-		h.log.WithError(err).Warnf("GetOrderByID: Invalid orderID format '%s'", orderIDStr)
-		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{
-			Error: "Invalid order ID format",
-		})
 		return
 	}
 
-	// Pass both orderID and authUserID to the service layer for ownership check
+	orderIDStr := c.Param("orderID")
+	orderID, err := strconv.ParseUint(orderIDStr, 10, 32)
+	if err != nil {
+		h.log.WithError(err).Warnf("Некорректный формат orderID: '%s'", orderIDStr)
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректный формат ID заказа"})
+		return
+	}
+
 	order, err := h.orderService.GetOrderByID(c.Request.Context(), uint(orderID), authUserID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// The service/repo layer returns ErrRecordNotFound if the order doesn't exist OR
-			// if it exists but doesn't belong to the authenticated user.
-			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{
-				Error: "Order not found or access denied",
-			})
-		} else {
-			h.log.WithError(err).Errorf("GetOrderByID: Failed for order %d for user %d", orderID, authUserID)
-			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
-				Error: "Failed to retrieve order",
-			})
+		switch {
+		case errors.Is(err, order_service.ErrOrderNotFound):
+			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{Error: "Заказ не найден"})
+		case errors.Is(err, order_service.ErrInvalidServiceInput):
+			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректный запрос"})
+		case errors.Is(err, order_service.ErrServiceDatabaseError):
+			h.log.WithError(err).Errorf("Ошибка БД при получении заказа %d для пользователя %d", orderID, authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка при получении заказа"})
+		default:
+			h.log.WithError(err).Errorf("Ошибка при получении заказа %d для пользователя %d", orderID, authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
 		}
 		return
 	}
@@ -167,34 +172,48 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 }
 
 // GetAllOrdersByUser godoc
-// @Summary Get all orders for user
-// @Description Retrieve paginated list of user's orders. The {id} in the path is validated against the authenticated user ID from the token.
-// @Tags Orders
+// @Summary Получение всех заказов пользователя
+// @Description Возвращает список заказов пользователя с пагинацией
+// @Tags Заказы
 // @Produce json
-// @Param id path int true "User ID" Format(uint) // Changed from userID to id
-// @Param page query int false "Page number" default(1) minimum(1)
-// @Param limit query int false "Items per page" default(10) minimum(1) maximum(100)
-// @Success 200 {object} order_model.PaginatedOrdersResponse "List of orders"
-// @Failure 400 {object} common_handler.ErrorResponse "Invalid query parameters or user ID format in URL"
-// @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
-// @Failure 403 {object} common_handler.ErrorResponse "Forbidden (trying to access another user's orders)"
-// @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
+// @Param id path int true "ID пользователя" Format(uint)
+// @Param page query int false "Номер страницы" default(1) minimum(1)
+// @Param limit query int false "Количество элементов на странице" default(10) minimum(1) maximum(100)
+// @Success 200 {object} order_model.PaginatedOrdersResponse "Список заказов"
+// @Failure 400 {object} common_handler.ErrorResponse "Некорректные параметры"
+// @Failure 401 {object} common_handler.ErrorResponse "Не авторизован"
+// @Failure 403 {object} common_handler.ErrorResponse "Доступ запрещен"
+// @Failure 500 {object} common_handler.ErrorResponse "Внутренняя ошибка сервера"
 // @Security BearerAuth
-// @Router /api/users/{id}/orders [get] // Changed from /api/users/{userID}/orders
+// @Router /api/users/{id}/orders [get]
 func (h *OrderHandler) GetAllOrdersByUser(c *gin.Context) {
 	authUserID, ok := h.checkUserIDMatch(c)
 	if !ok {
-		return // Response handled by checkUserIDMatch
+		return
 	}
 
-	page, limit := common_handler.GetPaginationParams(c)
-	// Pass authUserID to service to get orders only for the authenticated user
+	page, limit, err := h.commonHandler.GetPaginationParams(c)
+	if err != nil {
+		h.log.WithError(err).Warnf("Некорректные параметры пагинации для пользователя %d", authUserID)
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Неверные параметры пагинации"})
+		return
+	}
+
 	orders, total, err := h.orderService.GetAllOrdersByUser(c.Request.Context(), authUserID, page, limit)
 	if err != nil {
-		h.log.WithError(err).Errorf("GetAllOrdersByUser: Failed for user %d", authUserID)
-		c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
-			Error: "Failed to retrieve orders",
-		})
+		switch {
+		case errors.Is(err, order_service.ErrInvalidServiceInput):
+			h.log.WithError(err).Warnf("Ошибка валидации сервиса для пользователя %d", authUserID)
+			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Неверные параметры запроса"})
+		case errors.Is(err, order_service.ErrServiceDatabaseError):
+			h.log.WithError(err).Errorf("Ошибка БД при получении заказов пользователя %d", authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
+				Error: "Ошибка при получении списка заказов",
+			})
+		default:
+			h.log.WithError(err).Errorf("Ошибка при получении заказов пользователя %d", authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
+		}
 		return
 	}
 
@@ -219,61 +238,66 @@ func (h *OrderHandler) GetAllOrdersByUser(c *gin.Context) {
 }
 
 // UpdateOrder godoc
-// @Summary Update an order
-// @Description Update order details for a specific user's order. The {id} in the path is validated against the authenticated user ID from the token.
-// @Tags Orders
+// @Summary Обновление заказа
+// @Description Обновляет информацию о заказе пользователя
+// @Tags Заказы
 // @Accept json
 // @Produce json
-// @Param id path int true "User ID" Format(uint) // Changed from userID to id
-// @Param orderID path int true "Order ID" Format(uint)
-// @Param order body order_model.UpdateOrderRequest true "Order update data"
-// @Success 200 {object} order_model.OrderResponse "Updated order"
-// @Failure 400 {object} common_handler.ErrorResponse "Invalid input data or ID format"
-// @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
-// @Failure 403 {object} common_handler.ErrorResponse "Forbidden (trying to update another user's order)"
-// @Failure 404 {object} common_handler.ErrorResponse "Order not found or access denied"
-// @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
+// @Param id path int true "ID пользователя" Format(uint)
+// @Param orderID path int true "ID заказа" Format(uint)
+// @Param order body order_model.UpdateOrderRequest true "Данные для обновления"
+// @Success 200 {object} order_model.OrderResponse "Обновленный заказ"
+// @Failure 400 {object} common_handler.ErrorResponse "Некорректные данные"
+// @Failure 401 {object} common_handler.ErrorResponse "Не авторизован"
+// @Failure 403 {object} common_handler.ErrorResponse "Доступ запрещен"
+// @Failure 404 {object} common_handler.ErrorResponse "Заказ не найден"
+// @Failure 500 {object} common_handler.ErrorResponse "Внутренняя ошибка сервера"
 // @Security BearerAuth
-// @Router /api/users/{id}/orders/{orderID} [put] // Changed from /api/users/{userID}/orders/{orderID}
+// @Router /api/users/{id}/orders/{orderID} [put]
 func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 	authUserID, ok := h.checkUserIDMatch(c)
 	if !ok {
-		return // Response handled by checkUserIDMatch
+		return
 	}
 
-	// Read order ID using the new parameter name 'orderID'
 	orderIDStr := c.Param("orderID")
 	orderID, err := strconv.ParseUint(orderIDStr, 10, 32)
 	if err != nil {
-		h.log.WithError(err).Warnf("UpdateOrder: Invalid orderID format '%s'", orderIDStr)
-		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{
-			Error: "Invalid order ID format",
-		})
+		h.log.WithError(err).Warnf("Некорректный формат orderID: '%s'", orderIDStr)
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректный формат ID заказа"})
 		return
 	}
 
 	var req order_model.UpdateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.log.WithError(err).Warnf("UpdateOrder: Invalid request format for order %d", orderID)
-		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{
-			Error:   "Invalid input data",
-			Details: err.Error(),
-		})
+		h.log.WithError(err).Warnf("Некорректный формат запроса для заказа %d", orderID)
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректные данные для обновления"})
 		return
 	}
 
-	// Pass both orderID and authUserID to service for update and ownership check
 	order, err := h.orderService.UpdateOrder(c.Request.Context(), uint(orderID), authUserID, req)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{
-				Error: "Order not found or access denied",
+		switch {
+		case errors.Is(err, order_service.ErrOrderNotFound):
+			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{Error: "Заказ не найден"})
+		case errors.Is(err, order_service.ErrNoUpdateFields):
+			h.log.WithField("order_id", orderID).Info("Получен запрос на обновление без изменений")
+			c.JSON(http.StatusOK, order_model.OrderResponse{
+				ID:          order.ID,
+				UserID:      order.UserID,
+				ProductName: order.ProductName,
+				Quantity:    order.Quantity,
+				Price:       order.Price,
 			})
-		} else {
-			h.log.WithError(err).Errorf("UpdateOrder: Failed for order %d for user %d", orderID, authUserID)
-			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
-				Error: "Failed to update order",
-			})
+			return
+		case errors.Is(err, order_service.ErrInvalidServiceInput):
+			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: err.Error()})
+		case errors.Is(err, order_service.ErrServiceDatabaseError):
+			h.log.WithError(err).Errorf("Ошибка БД при обновлении заказа %d для пользователя %d", orderID, authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка при обновлении заказа"})
+		default:
+			h.log.WithError(err).Errorf("Ошибка при обновлении заказа %d для пользователя %d", orderID, authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
 		}
 		return
 	}
@@ -288,48 +312,46 @@ func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 }
 
 // DeleteOrder godoc
-// @Summary Delete an order
-// @Description Delete an order by ID for a specific user. The {id} in the path is validated against the authenticated user ID from the token.
-// @Tags Orders
+// @Summary Удаление заказа
+// @Description Удаляет заказ пользователя по ID
+// @Tags Заказы
 // @Produce json
-// @Param id path int true "User ID" Format(uint) // Changed from userID to id
-// @Param orderID path int true "Order ID" Format(uint)
-// @Success 204 "Order deleted"
-// @Failure 400 {object} common_handler.ErrorResponse "Invalid ID format"
-// @Failure 401 {object} common_handler.ErrorResponse "Unauthorized"
-// @Failure 403 {object} common_handler.ErrorResponse "Forbidden (trying to delete another user's order)"
-// @Failure 404 {object} common_handler.ErrorResponse "Order not found or access denied"
-// @Failure 500 {object} common_handler.ErrorResponse "Internal server error"
+// @Param id path int true "ID пользователя" Format(uint)
+// @Param orderID path int true "ID заказа" Format(uint)
+// @Success 204 "Заказ удален"
+// @Failure 400 {object} common_handler.ErrorResponse "Некорректный формат ID"
+// @Failure 401 {object} common_handler.ErrorResponse "Не авторизован"
+// @Failure 403 {object} common_handler.ErrorResponse "Доступ запрещен"
+// @Failure 404 {object} common_handler.ErrorResponse "Заказ не найден"
+// @Failure 500 {object} common_handler.ErrorResponse "Внутренняя ошибка сервера"
 // @Security BearerAuth
-// @Router /api/users/{id}/orders/{orderID} [delete] // Changed from /api/users/{userID}/orders/{orderID}
+// @Router /api/users/{id}/orders/{orderID} [delete]
 func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 	authUserID, ok := h.checkUserIDMatch(c)
 	if !ok {
-		return // Response handled by checkUserIDMatch
-	}
-
-	// Read order ID using the new parameter name 'orderID'
-	orderIDStr := c.Param("orderID")
-	orderID, err := strconv.ParseUint(orderIDStr, 10, 32)
-	if err != nil {
-		h.log.WithError(err).Warnf("DeleteOrder: Invalid orderID format '%s'", orderIDStr)
-		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{
-			Error: "Invalid order ID format",
-		})
 		return
 	}
 
-	// Pass both orderID and authUserID to service for deletion and ownership check
+	orderIDStr := c.Param("orderID")
+	orderID, err := strconv.ParseUint(orderIDStr, 10, 32)
+	if err != nil {
+		h.log.WithError(err).Warnf("Некорректный формат orderID: '%s'", orderIDStr)
+		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректный формат ID заказа"})
+		return
+	}
+
 	if err := h.orderService.DeleteOrder(c.Request.Context(), uint(orderID), authUserID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{
-				Error: "Order not found or access denied",
-			})
-		} else {
-			h.log.WithError(err).Errorf("DeleteOrder: Failed for order %d for user %d", orderID, authUserID)
-			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{
-				Error: "Failed to delete order",
-			})
+		switch {
+		case errors.Is(err, order_service.ErrOrderNotFound):
+			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{Error: "Заказ не найден"})
+		case errors.Is(err, order_service.ErrInvalidServiceInput):
+			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Некорректные данные запроса"})
+		case errors.Is(err, order_service.ErrServiceDatabaseError):
+			h.log.WithError(err).Errorf("Ошибка БД при удалении заказа %d для пользователя %d", orderID, authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка при удалении заказа"})
+		default:
+			h.log.WithError(err).Errorf("Ошибка при удалении заказа %d для пользователя %d", orderID, authUserID)
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
 		}
 		return
 	}

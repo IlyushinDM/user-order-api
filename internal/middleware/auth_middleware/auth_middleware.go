@@ -3,7 +3,6 @@ package auth_middleware
 import (
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/IlyushinDM/user-order-api/internal/handlers/common_handler"
@@ -13,9 +12,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// AuthMiddleware creates a Gin middleware for JWT authentication.
-func AuthMiddleware(log *logrus.Logger) gin.HandlerFunc {
+// AuthMiddleware создает middleware для аутентификации JWT токенов
+func AuthMiddleware(log *logrus.Logger, jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Пропускаем запросы регистрации пользователей
 		if c.Request.Method == http.MethodPost && c.Request.URL.Path == "/api/users" {
 			c.Next()
 			return
@@ -23,46 +23,51 @@ func AuthMiddleware(log *logrus.Logger) gin.HandlerFunc {
 
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			log.Warn("AuthMiddleware: Authorization header missing")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, common_handler.ErrorResponse{Error: "Authorization header required"})
+			log.Warn("Отсутствует заголовок Authorization")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common_handler.ErrorResponse{
+				Error: "Требуется заголовок Authorization",
+			})
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			log.Warn("AuthMiddleware: Invalid Authorization header format")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, common_handler.ErrorResponse{Error: "Authorization header format must be Bearer {token}"})
+			log.Warn("Некорректный формат заголовка Authorization")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common_handler.ErrorResponse{
+				Error: "Формат заголовка должен быть Bearer {token}",
+			})
 			return
 		}
 
 		tokenString := parts[1]
-		jwtSecret := os.Getenv("JWT_SECRET")
 		if jwtSecret == "" {
-			log.Error("AuthMiddleware: JWT_SECRET environment variable not set")
-			c.AbortWithStatusJSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Server configuration error"})
+			log.Error("Не установлена переменная окружения JWT_SECRET")
+			c.AbortWithStatusJSON(http.StatusInternalServerError, common_handler.ErrorResponse{
+				Error: "Ошибка конфигурации сервера",
+			})
 			return
 		}
 
 		claims, err := jwt_util.ValidateJWT(tokenString, jwtSecret)
 		if err != nil {
-			log.WithError(err).Warn("AuthMiddleware: Invalid JWT token")
+			log.WithError(err).Warn("Некорректный JWT токен")
 			status := http.StatusUnauthorized
-			message := "Invalid or expired token"
+			message := "Неверный или просроченный токен"
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				message = "Token has expired"
+				message = "Токен просрочен"
 			}
 			c.AbortWithStatusJSON(status, common_handler.ErrorResponse{Error: message})
 			return
 		}
 
-		// Set user information in the context for handlers to use
+		// Добавляем информацию о пользователе в контекст
 		c.Set("userID", claims.UserID)
-		c.Set("userEmail", claims.Email) // Add email if needed
+		c.Set("userEmail", claims.Email)
 
 		log.WithFields(logrus.Fields{
 			"userID":    claims.UserID,
 			"userEmail": claims.Email,
-		}).Debug("AuthMiddleware: User authenticated")
+		}).Debug("Пользователь успешно аутентифицирован")
 
 		c.Next()
 	}
