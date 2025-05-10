@@ -143,7 +143,7 @@ func (r *GormUserRepository) Update(ctx context.Context, user *user_model.User) 
 	return nil
 }
 
-// Delete deletes a user by ID. Performs a soft delete if the model has a DeletedAt field.
+// Delete deletes a user by ID.
 // **Добавлена проверка ID и улучшена обработка ErrRecordNotFound.**
 func (r *GormUserRepository) Delete(ctx context.Context, id uint) error {
 	logger := r.log.WithContext(ctx).WithField("method", "UserRepository.Delete").WithField("user_id", id)
@@ -154,7 +154,6 @@ func (r *GormUserRepository) Delete(ctx context.Context, id uint) error {
 		return fmt.Errorf("%w: user ID is zero, cannot delete", ErrInvalidInput)
 	}
 
-	// GORM's default Delete performs a soft delete if the model has DeletedAt field
 	result := r.db.WithContext(ctx).Delete(&user_model.User{}, id)
 
 	if result.Error != nil {
@@ -170,7 +169,7 @@ func (r *GormUserRepository) Delete(ctx context.Context, id uint) error {
 		return ErrUserNotFound
 	}
 
-	logger.Info("User deleted successfully (soft delete)")
+	logger.Info("User deleted successfully")
 	return nil
 }
 
