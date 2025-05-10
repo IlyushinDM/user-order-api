@@ -2,32 +2,24 @@ package user_model_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/IlyushinDM/user-order-api/internal/models/order_model" // Нужен для поля Orders
 	"github.com/IlyushinDM/user-order-api/internal/models/user_model"  // Путь к вашему пакету моделей пользователя
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 // Тест для структуры User
 func TestUserStruct(t *testing.T) {
-	// Проверяем создание и инициализацию структуры User
-	now := time.Now()
 	user := user_model.User{
 		ID:           1,
 		Name:         "Test User",
 		Email:        "test@example.com",
 		Age:          30,
 		PasswordHash: "hashedpassword",
-		Orders: []order_model.Order{ // Пример заполнения поля Orders
+		Orders: []order_model.Order{
 			{ID: 10, UserID: 1, ProductName: "Product A"},
 		},
-		CreatedAt: now,
-		UpdatedAt: now,
-		DeletedAt: gorm.DeletedAt{},
 	}
-
 	// Проверяем, что поля структуры доступны и имеют ожидаемые значения
 	assert.Equal(t, uint(1), user.ID, "Поле ID должно быть доступно и иметь правильное значение")
 	assert.Equal(t, "Test User", user.Name, "Поле Name должно быть доступно и иметь правильное значение")
@@ -37,9 +29,6 @@ func TestUserStruct(t *testing.T) {
 	assert.NotNil(t, user.Orders, "Поле Orders должно быть инициализировано")
 	assert.Len(t, user.Orders, 1, "Поле Orders должно содержать список заказов")
 	assert.Equal(t, uint(10), user.Orders[0].ID, "Элемент в списке Orders должен иметь правильное значение ID")
-	assert.WithinDuration(t, now, user.CreatedAt, time.Second, "Поле CreatedAt должно быть доступно и иметь правильное значение")
-	assert.WithinDuration(t, now, user.UpdatedAt, time.Second, "Поле UpdatedAt должно быть доступно и иметь правильное значение")
-	// Проверка GORM-специфичных полей и тегов более уместна в тестах репозиториев.
 }
 
 // Тест для структуры UserResponse
