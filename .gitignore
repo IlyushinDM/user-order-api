@@ -11,7 +11,7 @@
 # Имя исполняемого файла
 user-order-api
 
-# Dependencies
+# Зависимости
 /vendor/
 
 # IDE

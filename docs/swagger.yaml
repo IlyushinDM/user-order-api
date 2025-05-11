@@ -10,22 +10,13 @@ definitions:
   order_model.CreateOrderRequest:
     properties:
       price:
-        description: |-
-          Price per unit (must be positive)
-          required: true
-          example: 1200.50
+        description: Цена за единицу (положительное число)
         type: number
       product_name:
-        description: |-
-          Name of the product
-          required: true
-          example: Laptop
+        description: Название продукта (обязательно)
         type: string
       quantity:
-        description: |-
-          Quantity of the product (must be positive)
-          required: true
-          example: 1
+        description: Количество (положительное число)
         type: integer
     required:
     - price
@@ -48,69 +39,41 @@ definitions:
   order_model.PaginatedOrdersResponse:
     properties:
       limit:
-        description: |-
-          Number of items per page
-          example: 10
+        description: Количество элементов на странице
         type: integer
       orders:
-        description: List of orders on the current page
+        description: Список заказов
         items:
           $ref: '#/definitions/order_model.OrderResponse'
         type: array
       page:
-        description: |-
-          Current page number
-          example: 1
+        description: Текущая страница
         type: integer
       total:
-        description: |-
-          Total number of orders matching the criteria
-          example: 50
+        description: Общее количество заказов
         type: integer
     type: object
   order_model.UpdateOrderRequest:
     properties:
       price:
-        description: |-
-          New price per unit (must be positive, optional)
-          example: 1300.00
+        description: Новая цена (опционально)
         type: number
       product_name:
-        description: |-
-          New name of the product (optional)
-          example: Gaming Laptop
+        description: Новое название продукта
         type: string
       quantity:
-        description: |-
-          New quantity (must be positive, optional)
-          example: 2
+        description: Новое количество (опционально)
         type: integer
     type: object
   user_model.CreateUserRequest:
     properties:
       age:
-        description: |-
-          User's age (must be positive)
-          required: true
-          example: 30
         type: integer
       email:
-        description: |-
-          User's unique email address
-          required: true
-          example: john.doe@example.com
         type: string
       name:
-        description: |-
-          User's full name
-          required: true
-          example: John Doe
         type: string
       password:
-        description: |-
-          User's password (min 6 characters)
-          required: true
-          example: password123
         minLength: 6
         type: string
     required:
@@ -122,14 +85,8 @@ definitions:
   user_model.LoginRequest:
     properties:
       email:
-        description: |-
-          User's email address
-          required: true
         type: string
       password:
-        description: |-
-          User's password
-          required: true
         type: string
     required:
     - email
@@ -138,22 +95,17 @@ definitions:
   user_model.LoginResponse:
     properties:
       token:
-        description: JWT authentication token
         type: string
     type: object
   user_model.PaginatedUsersResponse:
     properties:
       limit:
-        description: Number of items per page
         type: integer
       page:
-        description: Current page number
         type: integer
       total:
-        description: Total number of users matching the criteria
         type: integer
       users:
-        description: List of users on the current page
         items:
           $ref: '#/definitions/user_model.UserResponse'
         type: array
@@ -161,13 +113,10 @@ definitions:
   user_model.UpdateUserRequest:
     properties:
       age:
-        description: User's age (must be positive, optional)
         type: integer
       email:
-        description: User's unique email address (optional)
         type: string
       name:
-        description: User's full name (optional)
         type: string
     type: object
   user_model.UserResponse:
@@ -422,22 +371,22 @@ paths:
       - Пользователи
   /api/users/{id}/orders:
     get:
-      description: Gets paginated list of orders for a user.
+      description: Возвращает список заказов пользователя с пагинацией
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
         required: true
         type: integer
       - default: 1
-        description: Page number
+        description: Номер страницы
         in: query
         minimum: 1
         name: page
         type: integer
       - default: 10
-        description: Items per page
+        description: Количество элементов на странице
         in: query
         maximum: 100
         minimum: 1
@@ -447,43 +396,42 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of orders
+          description: Список заказов
           schema:
             $ref: '#/definitions/order_model.PaginatedOrdersResponse'
         "400":
-          description: Invalid query params or user ID format
+          description: Некорректные параметры
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Не авторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (attempt to access another user's orders)
+          description: Доступ запрещен
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all orders for user
+      summary: Получение всех заказов пользователя
       tags:
-      - Orders
+      - Заказы
     post:
       consumes:
       - application/json
-      description: Creates a new order for the authenticated user. Checks {id} in
-        path against the authenticated user ID from token.
+      description: Создает новый заказ для аутентифицированного пользователя
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
         required: true
         type: integer
-      - description: Order data (product, quantity, price)
+      - description: Данные заказа
         in: body
         name: order
         required: true
@@ -493,41 +441,41 @@ paths:
       - application/json
       responses:
         "201":
-          description: Order successfully created
+          description: Заказ успешно создан
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid input or invalid user ID format in URL
+          description: Некорректные входные данные
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Не авторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (attempt to create order for another user)
+          description: Доступ запрещен
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Create new order
+      summary: Создание нового заказа
       tags:
-      - Orders
+      - Заказы
   /api/users/{id}/orders/{orderID}:
     delete:
-      description: Deletes order by ID for specified user.
+      description: Удаляет заказ пользователя по ID
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
         required: true
         type: integer
-      - description: Order ID
+      - description: ID заказа
         format: uint
         in: path
         name: orderID
@@ -537,42 +485,42 @@ paths:
       - application/json
       responses:
         "204":
-          description: Order deleted
+          description: Заказ удален
         "400":
-          description: Invalid ID format
+          description: Некорректный формат ID
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Не авторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (attempt to delete another user's order)
+          description: Доступ запрещен
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
-          description: Order not found or access denied
+          description: Заказ не найден
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Delete an order
+      summary: Удаление заказа
       tags:
-      - Orders
+      - Заказы
     get:
-      description: Gets specific order information by its ID for specified user.
+      description: Возвращает информацию о конкретном заказе пользователя
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
         required: true
         type: integer
-      - description: Order ID
+      - description: ID заказа
         format: uint
         in: path
         name: orderID
@@ -582,52 +530,52 @@ paths:
       - application/json
       responses:
         "200":
-          description: Order info
+          description: Информация о заказе
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid ID format
+          description: Некорректный формат ID
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Не авторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (attempt to access another user's order)
+          description: Доступ запрещен
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
-          description: Order not found or access denied
+          description: Заказ не найден
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get order by ID
+      summary: Получение заказа по ID
       tags:
-      - Orders
+      - Заказы
     put:
       consumes:
       - application/json
-      description: Updates the order details for a specific order of a user.
+      description: Обновляет информацию о заказе пользователя
       parameters:
-      - description: User ID
+      - description: ID пользователя
         format: uint
         in: path
         name: id
         required: true
         type: integer
-      - description: Order ID
+      - description: ID заказа
         format: uint
         in: path
         name: orderID
         required: true
         type: integer
-      - description: Order update data
+      - description: Данные для обновления
         in: body
         name: order
         required: true
@@ -637,34 +585,34 @@ paths:
       - application/json
       responses:
         "200":
-          description: Updated order
+          description: Обновленный заказ
           schema:
             $ref: '#/definitions/order_model.OrderResponse'
         "400":
-          description: Invalid input or ID format
+          description: Некорректные данные
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Не авторизован
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "403":
-          description: Forbidden (attempt to update another user's order)
+          description: Доступ запрещен
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "404":
-          description: Order not found or access denied
+          description: Заказ не найден
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           schema:
             $ref: '#/definitions/common_handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Update an order
+      summary: Обновление заказа
       tags:
-      - Orders
+      - Заказы
   /auth/login:
     post:
       consumes:

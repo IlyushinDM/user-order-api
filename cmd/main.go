@@ -67,7 +67,7 @@ func main() {
 	app.Logger.Info("Приложение завершило работу.")
 }
 
-// runApp настраивает маршрутизатор, запускает HTTP сервер и обрабатывает graceful shutdown.
+// runApp настраивает маршрутизатор, запускает HTTP сервер и обрабатывает graceful shutdown
 func runApp(app *core.App) error {
 	// 1. Установка маршрутизатора.
 	app.Router = core.SetupRouter(app)
@@ -76,8 +76,7 @@ func runApp(app *core.App) error {
 	srv := &http.Server{
 		Addr:    ":" + app.Config.Port,
 		Handler: app.Router,
-		// Используем сконфигурированные таймауты сервера.
-		// Значения в Config предполагаются в int (секунды), преобразуем в time.Duration.
+		// Используем сконфигурированные таймауты сервера
 		ReadTimeout:    time.Duration(app.Config.ReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(app.Config.WriteTimeout) * time.Second,
 		IdleTimeout:    time.Duration(app.Config.IdleTimeout) * time.Second,

@@ -363,19 +363,19 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Gets paginated list of orders for a user.",
+                "description": "Возвращает список заказов пользователя с пагинацией",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "Заказы"
                 ],
-                "summary": "Get all orders for user",
+                "summary": "Получение всех заказов пользователя",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -384,7 +384,7 @@ const docTemplate = `{
                         "minimum": 1,
                         "type": "integer",
                         "default": 1,
-                        "description": "Page number",
+                        "description": "Номер страницы",
                         "name": "page",
                         "in": "query"
                     },
@@ -393,38 +393,38 @@ const docTemplate = `{
                         "minimum": 1,
                         "type": "integer",
                         "default": 10,
-                        "description": "Items per page",
+                        "description": "Количество элементов на странице",
                         "name": "limit",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of orders",
+                        "description": "Список заказов",
                         "schema": {
                             "$ref": "#/definitions/order_model.PaginatedOrdersResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid query params or user ID format",
+                        "description": "Некорректные параметры",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Не авторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (attempt to access another user's orders)",
+                        "description": "Доступ запрещен",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -437,7 +437,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new order for the authenticated user. Checks {id} in path against the authenticated user ID from token.",
+                "description": "Создает новый заказ для аутентифицированного пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -445,20 +445,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "Заказы"
                 ],
-                "summary": "Create new order",
+                "summary": "Создание нового заказа",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Order data (product, quantity, price)",
+                        "description": "Данные заказа",
                         "name": "order",
                         "in": "body",
                         "required": true,
@@ -469,31 +469,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Order successfully created",
+                        "description": "Заказ успешно создан",
                         "schema": {
                             "$ref": "#/definitions/order_model.OrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or invalid user ID format in URL",
+                        "description": "Некорректные входные данные",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Не авторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (attempt to create order for another user)",
+                        "description": "Доступ запрещен",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -508,19 +508,19 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Gets specific order information by its ID for specified user.",
+                "description": "Возвращает информацию о конкретном заказе пользователя",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "Заказы"
                 ],
-                "summary": "Get order by ID",
+                "summary": "Получение заказа по ID",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -528,7 +528,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "Order ID",
+                        "description": "ID заказа",
                         "name": "orderID",
                         "in": "path",
                         "required": true
@@ -536,37 +536,37 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order info",
+                        "description": "Информация о заказе",
                         "schema": {
                             "$ref": "#/definitions/order_model.OrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid ID format",
+                        "description": "Некорректный формат ID",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Не авторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (attempt to access another user's order)",
+                        "description": "Доступ запрещен",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Order not found or access denied",
+                        "description": "Заказ не найден",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -579,7 +579,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates the order details for a specific order of a user.",
+                "description": "Обновляет информацию о заказе пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -587,14 +587,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "Заказы"
                 ],
-                "summary": "Update an order",
+                "summary": "Обновление заказа",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -602,13 +602,13 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "Order ID",
+                        "description": "ID заказа",
                         "name": "orderID",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Order update data",
+                        "description": "Данные для обновления",
                         "name": "order",
                         "in": "body",
                         "required": true,
@@ -619,37 +619,37 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Updated order",
+                        "description": "Обновленный заказ",
                         "schema": {
                             "$ref": "#/definitions/order_model.OrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or ID format",
+                        "description": "Некорректные данные",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Не авторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (attempt to update another user's order)",
+                        "description": "Доступ запрещен",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Order not found or access denied",
+                        "description": "Заказ не найден",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -662,19 +662,19 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Deletes order by ID for specified user.",
+                "description": "Удаляет заказ пользователя по ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "Заказы"
                 ],
-                "summary": "Delete an order",
+                "summary": "Удаление заказа",
                 "parameters": [
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -682,7 +682,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "format": "uint",
-                        "description": "Order ID",
+                        "description": "ID заказа",
                         "name": "orderID",
                         "in": "path",
                         "required": true
@@ -690,34 +690,34 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Order deleted"
+                        "description": "Заказ удален"
                     },
                     "400": {
-                        "description": "Invalid ID format",
+                        "description": "Некорректный формат ID",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Не авторизован",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden (attempt to delete another user's order)",
+                        "description": "Доступ запрещен",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Order not found or access denied",
+                        "description": "Заказ не найден",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/common_handler.ErrorResponse"
                         }
@@ -799,15 +799,15 @@ const docTemplate = `{
             ],
             "properties": {
                 "price": {
-                    "description": "Price per unit (must be positive)\nrequired: true\nexample: 1200.50",
+                    "description": "Цена за единицу (положительное число)",
                     "type": "number"
                 },
                 "product_name": {
-                    "description": "Name of the product\nrequired: true\nexample: Laptop",
+                    "description": "Название продукта (обязательно)",
                     "type": "string"
                 },
                 "quantity": {
-                    "description": "Quantity of the product (must be positive)\nrequired: true\nexample: 1",
+                    "description": "Количество (положительное число)",
                     "type": "integer"
                 }
             }
@@ -836,22 +836,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "limit": {
-                    "description": "Number of items per page\nexample: 10",
+                    "description": "Количество элементов на странице",
                     "type": "integer"
                 },
                 "orders": {
-                    "description": "List of orders on the current page",
+                    "description": "Список заказов",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/order_model.OrderResponse"
                     }
                 },
                 "page": {
-                    "description": "Current page number\nexample: 1",
+                    "description": "Текущая страница",
                     "type": "integer"
                 },
                 "total": {
-                    "description": "Total number of orders matching the criteria\nexample: 50",
+                    "description": "Общее количество заказов",
                     "type": "integer"
                 }
             }
@@ -860,15 +860,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "price": {
-                    "description": "New price per unit (must be positive, optional)\nexample: 1300.00",
+                    "description": "Новая цена (опционально)",
                     "type": "number"
                 },
                 "product_name": {
-                    "description": "New name of the product (optional)\nexample: Gaming Laptop",
+                    "description": "Новое название продукта",
                     "type": "string"
                 },
                 "quantity": {
-                    "description": "New quantity (must be positive, optional)\nexample: 2",
+                    "description": "Новое количество (опционально)",
                     "type": "integer"
                 }
             }
@@ -883,19 +883,15 @@ const docTemplate = `{
             ],
             "properties": {
                 "age": {
-                    "description": "User's age (must be positive)\nrequired: true\nexample: 30",
                     "type": "integer"
                 },
                 "email": {
-                    "description": "User's unique email address\nrequired: true\nexample: john.doe@example.com",
                     "type": "string"
                 },
                 "name": {
-                    "description": "User's full name\nrequired: true\nexample: John Doe",
                     "type": "string"
                 },
                 "password": {
-                    "description": "User's password (min 6 characters)\nrequired: true\nexample: password123",
                     "type": "string",
                     "minLength": 6
                 }
@@ -909,11 +905,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "description": "User's email address\nrequired: true",
                     "type": "string"
                 },
                 "password": {
-                    "description": "User's password\nrequired: true",
                     "type": "string"
                 }
             }
@@ -922,7 +916,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
-                    "description": "JWT authentication token",
                     "type": "string"
                 }
             }
@@ -931,19 +924,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "limit": {
-                    "description": "Number of items per page",
                     "type": "integer"
                 },
                 "page": {
-                    "description": "Current page number",
                     "type": "integer"
                 },
                 "total": {
-                    "description": "Total number of users matching the criteria",
                     "type": "integer"
                 },
                 "users": {
-                    "description": "List of users on the current page",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/user_model.UserResponse"
@@ -955,15 +944,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "age": {
-                    "description": "User's age (must be positive, optional)",
                     "type": "integer"
                 },
                 "email": {
-                    "description": "User's unique email address (optional)",
                     "type": "string"
                 },
                 "name": {
-                    "description": "User's full name (optional)",
                     "type": "string"
                 }
             }
