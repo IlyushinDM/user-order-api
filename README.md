@@ -97,7 +97,7 @@ GIN_MODE=release # production или debug
 LOG_LEVEL=info # Уровень логирования (panic, fatal, error, warn, info, debug, trace)
 
 # Настройка JWT
-JWT_SECRET=eWJyZ3R3cXN5aXZ2b3B0cndxdWVtYWFuc2Nkc2ZzZQ # Секретный ключ для подписи JWT
+JWT_SECRET=******** # Секретный ключ для подписи JWT
 JWT_EXPIRATION=1h # Время жизни токена (например: 24h, 3600s)
 
 # Среда приложения (prod или dev)

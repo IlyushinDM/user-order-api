@@ -14,16 +14,24 @@ type ErrorResponse struct {
 	Details string `json:"details,omitempty"`
 }
 
+// CommonHandlerInterface определяет интерфейс для общих вспомогательных функций,
+// используемых другими модулями, например, для пагинации и фильтрации.
+type CommonHandlerInterface interface {
+	GetPaginationParams(c *gin.Context) (page, limit int, err error)
+	GetFilteringParams(c *gin.Context) (map[string]any, error)
+}
+
 // CommonHandler структура для общих вспомогательных функций, управляющая зависимостями
 type CommonHandler struct {
 	log *logrus.Logger
 }
 
+// NewCommonHandler создает новый экземпляр CommonHandler
 func NewCommonHandler(log *logrus.Logger) *CommonHandler {
 	if log == nil {
 		defaultLog := logrus.New()
 		defaultLog.SetLevel(logrus.InfoLevel)
-		defaultLog.Warn("Экземпляр регистратора Logrus равен nil в NewCommonHandler")
+		defaultLog.Warn("Экземпляр регистратора Logrus равен nil в NewCommonHandler, используется регистратор по умолчанию")
 		log = defaultLog
 	}
 	return &CommonHandler{log: log}

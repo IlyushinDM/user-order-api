@@ -16,9 +16,7 @@ func LoggerMiddleware(log *logrus.Logger) gin.HandlerFunc {
 		raw := c.Request.URL.RawQuery
 
 		// Устанавливаем предоставленный логгер в контекст запроса.
-		// Это позволяет обработчикам запросов получить доступ к тому же экземпляру логгера.
 		c.Set("logger", log)
-
 		// Обрабатываем запрос, передавая управление следующему middleware или обработчику
 		c.Next()
 

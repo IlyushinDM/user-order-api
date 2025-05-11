@@ -18,6 +18,26 @@ import (
 	"gorm.io/gorm"
 )
 
+// NewAppWithInitDB allows injecting a custom InitDB function for testing.
+func NewAppWithInitDB(logger *logrus.Logger, config *config_util.Config, initDB func(cfg *config_util.Config, log *logrus.Logger) (*gorm.DB, error)) (*App, error) {
+	db, err := initDB(config, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	commonHandler := common_handler.NewCommonHandler(logger)
+	userHandler := user_handler.NewUserHandler(nil, commonHandler, logger)
+	orderHandler := order_handler.NewOrderHandler(nil, commonHandler, logger)
+
+	return &App{
+		Logger:       logger,
+		Config:       config,
+		DB:           db,
+		UserHandler:  userHandler,
+		OrderHandler: orderHandler,
+	}, nil
+}
+
 // App содержит основные компоненты приложения
 type App struct {
 	Config       *config_util.Config

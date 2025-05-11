@@ -1,160 +1,176 @@
 package auth_middleware_test
 
-// import (
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"net/url"
-// 	"os"
-// 	"testing"
+import (
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// 	auth_mw "github.com/IlyushinDM/user-order-api/internal/middleware/auth_middleware"
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/sirupsen/logrus"
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/IlyushinDM/user-order-api/internal/middleware/auth_middleware"
+	"github.com/IlyushinDM/user-order-api/internal/utils/jwt_util"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestAuthMiddleware(t *testing.T) {
-// 	gin.SetMode(gin.TestMode)
+// mockClaims implements the claims returned by jwt_util.ValidateJWT
+type mockClaims struct {
+	UserID string
+	Email  string
+}
 
-// 	// Setup Logger
-// 	log := logrus.New()
-// 	log.SetLevel(logrus.ErrorLevel) // Suppress Debug and Info logs
+func TestAuthMiddleware_RegistrationBypass(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddleware(log, "secret"))
+	router.POST("/api/users", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 	// Set JWT_SECRET env variable for tests
-// 	os.Setenv("JWT_SECRET", "test_secret")
-// 	defer os.Unsetenv("JWT_SECRET")
+	req := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 	// Helper function to create a test context
-// 	createTestContext := func(method, path, authHeader string) (*gin.Context, *httptest.ResponseRecorder) {
-// 		w := httptest.NewRecorder()
-// 		c, _ := gin.CreateTestContext(w)
-// 		c.Request = &http.Request{
-// 			Method: method,
-// 			URL:    &url.URL{Path: path},
-// 			Header: make(http.Header),
-// 		}
-// 		if authHeader != "" {
-// 			c.Request.Header.Set("Authorization", authHeader)
-// 		}
-// 		return c, w
-// 	}
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "ok", w.Body.String())
+}
 
-// 	t.Run("Bypass POST /api/users", func(t *testing.T) {
-// 		c, w := createTestContext(http.MethodPost, "/api/users", "")
+func TestAuthMiddleware_MissingAuthorizationHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddleware(log, "secret"))
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 		middleware := auth_mw.AuthMiddleware(log)
-// 		middleware(c)
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 		assert.Equal(t, http.StatusOK, w.Code) // Should not be aborted
-// 		assert.False(t, c.IsAborted())
-// 	})
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Contains(t, w.Body.String(), "Требуется заголовок Authorization")
+}
 
-// 	t.Run("Missing Authorization header", func(t *testing.T) {
-// 		c, w := createTestContext(http.MethodGet, "/api/orders", "")
+func TestAuthMiddleware_InvalidAuthorizationFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddleware(log, "secret"))
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 		middleware := auth_mw.AuthMiddleware(log)
-// 		middleware(c)
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "InvalidTokenFormat")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 		assert.Equal(t, http.StatusUnauthorized, w.Code)
-// 		assert.True(t, c.IsAborted())
-// 		expectedResponse := `{"error":"Authorization header required"}`
-// 		assert.Equal(t, expectedResponse, w.Body.String())
-// 	})
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Contains(t, w.Body.String(), "Формат заголовка должен быть Bearer {token}")
+}
 
-// 	t.Run("Invalid Authorization header format", func(t *testing.T) {
-// 		c, w := createTestContext(http.MethodGet, "/api/orders", "InvalidHeader")
+func TestAuthMiddleware_MissingJWTSecret(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddleware(log, ""))
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 		middleware := auth_mw.AuthMiddleware(log)
-// 		middleware(c)
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer sometoken")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 		assert.Equal(t, http.StatusUnauthorized, w.Code)
-// 		assert.True(t, c.IsAborted())
-// 		expectedResponse := `{"error":"Authorization header format must be Bearer {token}"}`
-// 		assert.Equal(t, expectedResponse, w.Body.String())
-// 	})
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "Ошибка конфигурации сервера")
+}
 
-// 	t.Run("Invalid JWT_SECRET env variable", func(t *testing.T) {
-// 		os.Unsetenv("JWT_SECRET") // Unset for this test
+// mockValidateJWT replaces jwt_util.ValidateJWT for testing
+func mockValidateJWT(tokenString, secret string) (*jwt_util.Claims, error) {
+	if tokenString == "validtoken" {
+		return &jwt_util.Claims{UserID: 123, Email: "test@example.com"}, nil
+	}
+	if tokenString == "expiredtoken" {
+		return nil, jwt.ErrTokenExpired
+	}
+	return nil, errors.New("invalid token")
+}
 
-// 		c, w := createTestContext(http.MethodGet, "/api/orders", "Bearer valid_token") // Doesn't matter, will fail before jwt check
+func TestAuthMiddleware_InvalidJWTToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddleware(log, "secret"))
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 		middleware := auth_mw.AuthMiddleware(log)
-// 		middleware(c)
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer invalidtoken")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 		assert.Equal(t, http.StatusInternalServerError, w.Code)
-// 		assert.True(t, c.IsAborted())
-// 		expectedResponse := `{"error":"Server configuration error"}`
-// 		assert.Equal(t, expectedResponse, w.Body.String())
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Contains(t, w.Body.String(), "Неверный или просроченный токен")
+}
 
-// 		os.Setenv("JWT_SECRET", "test_secret") // Restore for other tests
-// 	})
+func TestAuthMiddleware_ExpiredJWTToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddleware(log, "secret"))
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 	t.Run("Invalid JWT token", func(t *testing.T) {
-// 		c, w := createTestContext(http.MethodGet, "/api/orders", "Bearer invalid_token")
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer expiredtoken")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 		middleware := auth_mw.AuthMiddleware(log)
-// 		middleware(c)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Contains(t, w.Body.String(), "Неверный или просроченный токен")
+}
 
-// 		assert.Equal(t, http.StatusUnauthorized, w.Code)
-// 		assert.True(t, c.IsAborted())
-// 		expectedResponse := `{"error":"Invalid or expired token"}`
-// 		assert.Equal(t, expectedResponse, w.Body.String())
-// 	})
+func TestAuthMiddleware_InvalidJWTToken_CustomValidator(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	router.Use(auth_middleware.AuthMiddlewareWithValidator(log, "secret", mockValidateJWT))
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
 
-// 	// t.Run("Expired JWT token", func(t *testing.T) {
-// 	// 	// Generate an expired token
-// 	// 	claims := &jwt_util.Claims{
-// 	// 		UserID: 123,
-// 	// 		Email:  "test@example.com",
-// 	// 		RegisteredClaims: jwt.RegisteredClaims{
-// 	// 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Hour)),
-// 	// 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-// 	// 		},
-// 	// 	}
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer sometotallyinvalidtoken")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 	// 	expirationSeconds := 3600
-// 	// 	token, err := jwt_util.GenerateJWT(claims.UserID, claims.Email, "test_secret", expirationSeconds)
-// 	// 	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Contains(t, w.Body.String(), "Неверный или просроченный токен")
+}
 
-// 	// 	c, w := createTestContext(http.MethodGet, "/api/orders", "Bearer "+token)
+func TestAuthMiddleware_NextHandlerNotCalledOnFailure(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	log := logrus.New()
+	called := false
+	router.Use(auth_middleware.AuthMiddlewareWithValidator(log, "secret", mockValidateJWT))
+	router.GET("/protected", func(c *gin.Context) {
+		called = true
+		c.String(200, "ok")
+	})
 
-// 	// 	middleware := auth_mw.AuthMiddleware(log)
-// 	// 	middleware(c)
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer sometotallyinvalidtoken")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-// 	// 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-// 	// 	assert.True(t, c.IsAborted())
-// 	// 	expectedResponse := `{"error":"Token has expired"}`
-// 	// 	assert.Equal(t, expectedResponse, w.Body.String())
-// 	// })
-
-// 	// t.Run("Valid JWT token", func(t *testing.T) {
-// 	// 	claims := &jwt_util.Claims{
-// 	// 		UserID: 456,
-// 	// 		Email:  "valid@example.com",
-// 	// 		RegisteredClaims: jwt.RegisteredClaims{
-// 	// 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)), // Expires in 1 hour
-// 	// 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-// 	// 		},
-// 	// 	}
-
-// 	// 	expirationSeconds := 3600
-// 	// 	token, err := jwt_util.GenerateJWT(claims.UserID, claims.Email, "test_secret", expirationSeconds)
-// 	// 	assert.NoError(t, err)
-
-// 	// 	c, w := createTestContext(http.MethodGet, "/api/orders", "Bearer "+token)
-
-// 	// 	middleware := auth_mw.AuthMiddleware(log)
-// 	// 	middleware(c)
-
-// 	// 	assert.Equal(t, http.StatusOK, w.Code) // Should not be aborted
-// 	// 	assert.False(t, c.IsAborted())
-
-// 	// 	userID, exists := c.Get("userID")
-// 	// 	assert.True(t, exists)
-// 	// 	assert.Equal(t, 456, userID)
-
-// 	// 	userEmail, exists := c.Get("userEmail")
-// 	// 	assert.True(t, exists)
-// 	// 	assert.Equal(t, "valid@example.com", userEmail)
-// 	// })
-// }
+	assert.False(t, called, "Handler should not be called on auth failure")
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}

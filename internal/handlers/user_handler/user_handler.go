@@ -14,22 +14,22 @@ import (
 
 type UserHandler struct {
 	userService   user_service.UserService
-	commonHandler *common_handler.CommonHandler
+	commonHandler common_handler.CommonHandlerInterface
 	log           *logrus.Logger
 }
 
 // NewUserHandler инициализирует UserHandler с проверкой зависимостей
-func NewUserHandler(userService user_service.UserService, commonHandler *common_handler.CommonHandler, log *logrus.Logger) *UserHandler {
+func NewUserHandler(userService user_service.UserService, commonHandler common_handler.CommonHandlerInterface, log *logrus.Logger) *UserHandler {
 	if userService == nil {
-		logrus.Fatal("UserService не может быть nil")
+		logrus.Panic("UserService не может быть nil")
 	}
 	if commonHandler == nil {
-		logrus.Fatal("CommonHandler не может быть nil")
+		logrus.Panic("CommonHandler не может быть nil")
 	}
 	if log == nil {
 		defaultLog := logrus.New()
 		defaultLog.SetLevel(logrus.InfoLevel)
-		defaultLog.Warn("Logger не указан, используется logger по умолчанию")
+		defaultLog.Warn("Logger не указан в NewUserHandler, используется logger по умолчанию")
 		log = defaultLog
 	}
 	return &UserHandler{userService: userService, commonHandler: commonHandler, log: log}
@@ -63,19 +63,14 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		logger.WithError(err).Error("Сервис вернул ошибку при создании пользователя")
 		switch {
 		case errors.Is(err, user_service.ErrInvalidServiceInput):
-			// Ошибка валидации на уровне сервиса
 			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Недопустимые входные данные", Details: err.Error()})
 		case errors.Is(err, user_service.ErrUserAlreadyExists):
-			// Пользователь с таким email уже существует
 			c.JSON(http.StatusConflict, common_handler.ErrorResponse{Error: "Пользователь с таким email уже существует"})
 		case errors.Is(err, user_service.ErrInternalServiceError):
-			// Внутренняя ошибка сервиса
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
 		case errors.Is(err, user_service.ErrServiceDatabaseError):
-			// Ошибка, связанная с БД
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Сбой операции с базой данных"})
 		default:
-			// Неизвестная ошибка сервиса
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Не удалось создать пользователя"})
 		}
 		return
@@ -166,6 +161,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	logger := h.log.WithContext(c.Request.Context()).WithField("method", "UserHandler.GetAllUsers")
 
+	// Теперь вызывается на интерфейсе commonHandler
 	page, limit, err := h.commonHandler.GetPaginationParams(c)
 	if err != nil {
 		logger.WithError(err).Warn("Недопустимые параметры разбивки на страницы")
@@ -173,6 +169,7 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 		return
 	}
 
+	// Теперь вызывается на интерфейсе commonHandler
 	filters, err := h.commonHandler.GetFilteringParams(c)
 	if err != nil {
 		logger.WithError(err).Warn("Недопустимые параметры фильтрации")
@@ -270,44 +267,35 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// Call service to update user
 	user, err := h.userService.UpdateUser(c.Request.Context(), uint(id), req)
 	// Обработка ошибок сервисного слоя
 	if err != nil {
 		logger.WithError(err).Error("Service returned error during user update")
 		switch {
 		case errors.Is(err, user_service.ErrInvalidServiceInput):
-			// Ошибка валидации на уровне сервиса
 			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Недопустимые входные данные", Details: err.Error()})
 		case errors.Is(err, user_service.ErrUserNotFound):
-			// Пользователь не найден (либо по ID, либо конкурентное удаление)
-			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{Error: err.Error()}) // Возвращаем сообщение "User not found"
+			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{Error: "Пользователь не найден "})
 		case errors.Is(err, user_service.ErrEmailAlreadyTaken):
-			// Email уже занят другим пользователем
-			c.JSON(http.StatusConflict, common_handler.ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusConflict, common_handler.ErrorResponse{Error: "Email уже занят другим пользователем"})
 		case errors.Is(err, user_service.ErrNoUpdateFields):
-			// Нет полей для обновления (это может быть 200 OK)
-			logger.Info("Update called with no fields to update, returning existing user data")
-			// Сервис в этом случае возвращает текущие данные пользователя
+			logger.Info("Нет полей для обновлени")
 			c.JSON(http.StatusOK, user_model.UserResponse{
 				ID:    user.ID,
 				Name:  user.Name,
 				Email: user.Email,
 				Age:   user.Age,
 			})
-			return // Важно выйти после успешного ответа
+			return
 		case errors.Is(err, user_service.ErrServiceDatabaseError):
-			// Ошибка, связанная с БД
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Сбой операции с базой данных"})
 		default:
-			// Неизвестная ошибка сервиса
-			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Failed to update user"})
+			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Неизвестная ошибка сервиса"})
 		}
 		return
 	}
 
 	logger.Info("User updated successfully")
-	// Respond with success
 	c.JSON(http.StatusOK, user_model.UserResponse{
 		ID:    user.ID,
 		Name:  user.Name,
@@ -334,17 +322,16 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	logger := h.log.WithContext(c.Request.Context()).WithField("method", "UserHandler.DeleteUser")
 	idStr := c.Param("id")
 
-	// Parse user ID from path parameter
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		logger.WithError(err).Warnf("Недопустимый формат идентификатора '%s'", idStr)
 		c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Неверный формат идентификатора пользователя"})
 		return
 	}
-	logger = logger.WithField("user_id", uint(id)) // Добавляем ID в лог
+	logger = logger.WithField("user_id", uint(id))
 
 	// Проверка авторизованного пользователя (остается в обработчике)
-	authUserID, exists := c.Get("userID") // userID должен быть установлен middleware аутентификации
+	authUserID, exists := c.Get("userID")
 	if !exists {
 		logger.Error("userID not found in context")
 		c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Authentication context error"})
@@ -411,20 +398,14 @@ func (h *UserHandler) LoginUser(c *gin.Context) {
 		logger.WithError(err).Error("Служба вернула ошибку при входе в систему")
 		switch {
 		case errors.Is(err, user_service.ErrInvalidServiceInput):
-			// Ошибка валидации на уровне сервиса (пустые email/пароль)
 			c.JSON(http.StatusBadRequest, common_handler.ErrorResponse{Error: "Недопустимые входные данные", Details: err.Error()})
 		case errors.Is(err, user_service.ErrInvalidCredentials):
-			// Неверные учетные данные (пользователь не найден или неверный пароль)
-			// Возвращаем generic 401 для безопасности.
 			c.JSON(http.StatusUnauthorized, common_handler.ErrorResponse{Error: "Неверные учетные данные"})
 		case errors.Is(err, user_service.ErrInternalServiceError):
-			// Внутренняя ошибка сервиса (например, ошибка генерации JWT)
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Внутренняя ошибка сервера"})
 		case errors.Is(err, user_service.ErrServiceDatabaseError):
-			// Ошибка, связанная с БД
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Сбой операции с базой данных"})
 		default:
-			// Неизвестная ошибка сервиса
 			c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка входа"})
 		}
 		return

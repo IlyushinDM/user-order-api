@@ -1,75 +1,169 @@
-package logger_util_test
+package logger_util
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	"os"
-// 	"testing"
+import (
+	"bytes"
+	"os"
+	"strings"
+	"sync"
+	"testing"
 
-// 	"github.com/IlyushinDM/user-order-api/internal/utils/logger_util" // Путь к вашему пакету
-// 	"github.com/sirupsen/logrus"
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/sirupsen/logrus"
+)
 
-// // Тест для функции SetupLogger
-// func TestSetupLogger(t *testing.T) {
-// 	// Сохраняем текущий stdout и восстанавливаем после теста
-// 	oldStdout := os.Stdout
-// 	_, w, _ := os.Pipe()
-// 	os.Stdout = w
-// 	defer func() {
-// 		os.Stdout = oldStdout
-// 	}()
+// --- Tests for asyncWriter ---
 
-// 	// Проверяем установку уровня по умолчанию (info) при отсутствии переменной окружения
-// 	os.Unsetenv("LOG_LEVEL")
-// 	log := logger_util.SetupLogger()
-// 	assert.NotNil(t, log, "SetupLogger должен вернуть экземпляр логгера")
-// 	assert.Equal(t, logrus.InfoLevel, log.GetLevel(), "Уровень логгирования должен быть Info по умолчанию")
-// 	// Проверка формата JSON и вывода в stdout требует чтения из pipe, что сложнее.
-// 	// Для простоты ограничимся проверкой возвращаемого типа и уровня.
+func TestNewAsyncWriter_NilWriter(t *testing.T) {
+	aw, err := NewAsyncWriter(nil, 10)
+	if err == nil || aw != nil {
+		t.Errorf("Expected error for nil writer, got aw=%v, err=%v", aw, err)
+	}
+}
 
-// 	// Проверяем установку уровня из переменной окружения
-// 	os.Setenv("LOG_LEVEL", "debug")
-// 	log = logger_util.SetupLogger()
-// 	assert.Equal(t, logrus.DebugLevel, log.GetLevel(), "Уровень логгирования должен быть Debug")
-// 	os.Unsetenv("LOG_LEVEL") // Очистка переменной окружения
+func TestAsyncWriter_WriteAndClose(t *testing.T) {
+	var buf bytes.Buffer
+	aw, err := NewAsyncWriter(&buf, 2)
+	if err != nil {
+		t.Fatalf("Failed to create asyncWriter: %v", err)
+	}
 
-// 	// Проверяем некорректное значение переменной окружения
-// 	os.Setenv("LOG_LEVEL", "invalid")
-// 	log = logger_util.SetupLogger()
-// 	assert.Equal(t, logrus.InfoLevel, log.GetLevel(), "При некорректном значении LOG_LEVEL должен использоваться уровень Info")
-// 	os.Unsetenv("LOG_LEVEL") // Очистка переменной окружения
+	msg := []byte("hello async log\n")
+	n, err := aw.Write(msg)
+	if err != nil {
+		t.Errorf("Unexpected error on Write: %v", err)
+	}
+	if n != len(msg) {
+		t.Errorf("Expected written bytes %d, got %d", len(msg), n)
+	}
 
-// 	w.Close() // Закрываем pipe для записи
-// }
+	// Close and ensure all logs are flushed
+	if err := aw.Close(); err != nil {
+		t.Errorf("Close failed: %v", err)
+	}
 
-// // Тест для адаптера LogrusGormWriter
-// func TestLogrusGormWriter_Printf(t *testing.T) {
-// 	// Создаем буфер для захвата вывода логгера
-// 	var buf bytes.Buffer
-// 	// Создаем мок логгер Logrus, который пишет в буфер
-// 	mockLogger := logrus.New()
-// 	mockLogger.SetOutput(&buf)
-// 	mockLogger.SetFormatter(&logrus.JSONFormatter{})
-// 	mockLogger.SetLevel(logrus.TraceLevel) // Включаем уровень Trace для проверки Printf
+	if !strings.Contains(buf.String(), "hello async log") {
+		t.Errorf("Expected log message in buffer, got: %q", buf.String())
+	}
+}
 
-// 	// Создаем адаптер с мок логгером
-// 	writer := &logger_util.LogrusGormWriter{Logger: mockLogger}
+// --- Tests for SetupLogger ---
 
-// 	// Вызываем метод Printf адаптера
-// 	testMessage := "Тестовое сообщение с параметрами: %s %d"
-// 	testData := []interface{}{"строка", 123}
-// 	writer.Printf(testMessage, testData...)
+func TestSetupLogger_DefaultLevel(t *testing.T) {
+	// Unset LOG_LEVEL to test default
+	os.Unsetenv("LOG_LEVEL")
+	log, closeFunc := SetupLogger()
+	defer closeFunc()
 
-// 	// Декодируем JSON-лог из буфера
-// 	var logEntry map[string]interface{}
-// 	err := json.Unmarshal(buf.Bytes(), &logEntry)
-// 	assert.NoError(t, err, "Вывод логгера должен быть валидным JSON")
+	if log.GetLevel() != logrus.InfoLevel {
+		t.Errorf("Expected default log level info, got %v", log.GetLevel())
+	}
+}
 
-// 	// Проверяем, что сообщение лога соответствует ожидаемому формату Trace
-// 	// Logrus.Tracef форматирует сообщение перед записью
-// 	expectedMessage := "Тестовое сообщение с параметрами: строка 123"
-// 	assert.Equal(t, "trace", logEntry["level"], "Уровень лога должен быть trace")
-// 	assert.Equal(t, expectedMessage, logEntry["msg"], "Сообщение лога должно быть правильно отформатировано")
-// }
+func TestSetupLogger_InvalidLevel(t *testing.T) {
+	os.Setenv("LOG_LEVEL", "notalevel")
+	defer os.Unsetenv("LOG_LEVEL")
+	log, closeFunc := SetupLogger()
+	defer closeFunc()
+
+	if log.GetLevel() != logrus.InfoLevel {
+		t.Errorf("Expected fallback to info level, got %v", log.GetLevel())
+	}
+}
+
+// --- Tests for LogrusGormWriter ---
+
+type testHook struct {
+	mu   sync.Mutex
+	msgs []string
+}
+
+func (h *testHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *testHook) Fire(e *logrus.Entry) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.msgs = append(h.msgs, e.Message)
+	return nil
+}
+
+func TestLogrusGormWriter_Printf(t *testing.T) {
+	logger := logrus.New()
+	hook := &testHook{}
+	logger.AddHook(hook)
+	logger.SetLevel(logrus.TraceLevel)
+
+	gormWriter := &LogrusGormWriter{Logger: logger}
+	gormWriter.Printf("gorm query: %s", "SELECT 1")
+
+	found := false
+	hook.mu.Lock()
+	for _, msg := range hook.msgs {
+		if strings.Contains(msg, "gorm query: SELECT 1") {
+			found = true
+			break
+		}
+	}
+	hook.mu.Unlock()
+	if !found {
+		t.Errorf("Expected gorm query log in hook messages, got: %v", hook.msgs)
+	}
+}
+
+// --- Test LoggerConfig defaults ---
+
+func TestLoggerConfig_Default(t *testing.T) {
+	var cfg LoggerConfig
+	if cfg.LogLevel != "" {
+		t.Errorf("Expected empty LogLevel before env/config load, got %q", cfg.LogLevel)
+	}
+}
+
+// --- Test asyncWriter closes underlying writer if io.Closer and not os.Stdout ---
+
+type closerBuffer struct {
+	bytes.Buffer
+	closed bool
+}
+
+func (c *closerBuffer) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestAsyncWriter_Close_ClosesUnderlyingWriter(t *testing.T) {
+	cb := &closerBuffer{}
+	aw, err := NewAsyncWriter(cb, 2)
+	if err != nil {
+		t.Fatalf("Failed to create asyncWriter: %v", err)
+	}
+	aw.Write([]byte("test\n"))
+	aw.Close()
+	if !cb.closed {
+		t.Errorf("Expected underlying writer to be closed")
+	}
+}
+
+func TestAsyncWriter_Close_DoesNotCloseStdout(t *testing.T) {
+	aw, err := NewAsyncWriter(os.Stdout, 2)
+	if err != nil {
+		t.Fatalf("Failed to create asyncWriter: %v", err)
+	}
+	aw.Write([]byte("test\n"))
+	// Should not panic or close os.Stdout
+	if err := aw.Close(); err != nil {
+		t.Errorf("Close failed: %v", err)
+	}
+}
+
+// --- Test processQueue handles done signal with empty queue ---
+
+func TestAsyncWriter_ProcessQueue_DoneEmptyQueue(t *testing.T) {
+	var buf bytes.Buffer
+	aw, err := NewAsyncWriter(&buf, 1)
+	if err != nil {
+		t.Fatalf("Failed to create asyncWriter: %v", err)
+	}
+	aw.Close()
+	// Should not deadlock or panic
+}

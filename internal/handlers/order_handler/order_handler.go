@@ -13,15 +13,17 @@ import (
 )
 
 type OrderHandler struct {
-	orderService  order_service.OrderService
-	commonHandler *common_handler.CommonHandler
+	orderService order_service.OrderService
+	// Изменено: использование интерфейса вместо указателя на конкретную структуру
+	commonHandler common_handler.CommonHandlerInterface
 	log           *logrus.Logger
 }
 
 // NewOrderHandler создает новый экземпляр OrderHandler с проверкой входных параметров
 func NewOrderHandler(
 	orderService order_service.OrderService,
-	commonHandler *common_handler.CommonHandler,
+	// Изменено: использование интерфейса вместо указателя на конкретную структуру
+	commonHandler common_handler.CommonHandlerInterface,
 	log *logrus.Logger,
 ) *OrderHandler {
 	if orderService == nil {
@@ -282,12 +284,19 @@ func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 			c.JSON(http.StatusNotFound, common_handler.ErrorResponse{Error: "Заказ не найден"})
 		case errors.Is(err, order_service.ErrNoUpdateFields):
 			h.log.WithField("order_id", orderID).Info("Получен запрос на обновление без изменений")
+			// Вернуть существующий заказ, если нет изменений
+			existingOrder, getErr := h.orderService.GetOrderByID(c.Request.Context(), uint(orderID), authUserID)
+			if getErr != nil {
+				h.log.WithError(getErr).Errorf("Ошибка при получении существующего заказа %d после ErrNoUpdateFields", orderID)
+				c.JSON(http.StatusInternalServerError, common_handler.ErrorResponse{Error: "Ошибка при получении заказа"})
+				return
+			}
 			c.JSON(http.StatusOK, order_model.OrderResponse{
-				ID:          order.ID,
-				UserID:      order.UserID,
-				ProductName: order.ProductName,
-				Quantity:    order.Quantity,
-				Price:       order.Price,
+				ID:          existingOrder.ID,
+				UserID:      existingOrder.UserID,
+				ProductName: existingOrder.ProductName,
+				Quantity:    existingOrder.Quantity,
+				Price:       existingOrder.Price,
 			})
 			return
 		case errors.Is(err, order_service.ErrInvalidServiceInput):

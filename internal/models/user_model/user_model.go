@@ -4,19 +4,17 @@ import (
 	"github.com/IlyushinDM/user-order-api/internal/models/order_model"
 )
 
-// User represents the user model in the database.
-// swagger:model User
+// User представляет собой модель пользователя в базе данных
 type User struct {
 	ID           uint                `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name         string              `gorm:"not null;size:255" json:"name" binding:"required"`
 	Email        string              `gorm:"unique;not null;size:255" json:"email" binding:"required,email"`
 	Age          int                 `gorm:"not null" json:"age" binding:"required,gt=0"`
-	PasswordHash string              `gorm:"not null" json:"-"` // Never expose hash
+	PasswordHash string              `gorm:"not null" json:"-"`
 	Orders       []order_model.Order `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"orders,omitempty"`
 }
 
-// UserResponse defines the data returned for a user (excluding sensitive info).
-// swagger:response UserResponse
+// UserResponse определяет данные, возвращаемые пользователю (за исключением конфиденциальной информации)
 type UserResponse struct {
 	ID    uint   `json:"id"`
 	Name  string `json:"name"`
@@ -24,65 +22,36 @@ type UserResponse struct {
 	Age   int    `json:"age"`
 }
 
-// CreateUserRequest defines the structure for creating a new user.
-// swagger:parameters CreateUser
+// CreateUserRequest определяет структуру для создания нового пользователя
 type CreateUserRequest struct {
-	// User's full name
-	// required: true
-	// example: John Doe
-	Name string `json:"name" binding:"required"`
-	// User's unique email address
-	// required: true
-	// example: john.doe@example.com
-	Email string `json:"email" binding:"required,email"`
-	// User's age (must be positive)
-	// required: true
-	// example: 30
-	Age int `json:"age" binding:"required,gt=0"`
-	// User's password (min 6 characters)
-	// required: true
-	// example: password123
+	Name     string `json:"name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Age      int    `json:"age" binding:"required,gt=0"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
-// UpdateUserRequest defines the structure for updating an existing user.
-// swagger:parameters UpdateUser
+// UpdateUserRequest определяет структуру для обновления существующего пользователя
 type UpdateUserRequest struct {
-	// User's full name (optional)
-	Name string `json:"name"`
-	// User's unique email address (optional)
+	Name  string `json:"name"`
 	Email string `json:"email" binding:"omitempty,email"`
-	// User's age (must be positive, optional)
-	Age int `json:"age" binding:"omitempty,gt=0"`
+	Age   int    `json:"age" binding:"omitempty,gt=0"`
 }
 
-// PaginatedUsersResponse defines the structure for paginated user lists.
-// swagger:response PaginatedUsersResponse
+// PaginatedUsersResponse определяет структуру постраничных списков пользователей
 type PaginatedUsersResponse struct {
-	// Current page number
-	Page int `json:"page"`
-	// Number of items per page
-	Limit int `json:"limit"`
-	// Total number of users matching the criteria
-	Total int64 `json:"total"`
-	// List of users on the current page
+	Page  int            `json:"page"`
+	Limit int            `json:"limit"`
+	Total int64          `json:"total"`
 	Users []UserResponse `json:"users"`
 }
 
-// LoginRequest defines the structure for user login.
-// swagger:parameters LoginUser
+// LoginRequest определяет структуру для входа пользователя в систему
 type LoginRequest struct {
-	// User's email address
-	// required: true
-	Email string `json:"email" binding:"required,email"`
-	// User's password
-	// required: true
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// LoginResponse defines the structure for the login response (JWT token).
-// swagger:response LoginResponse
+// LoginResponse определяет структуру ответа на вход в систему (токен JWT)
 type LoginResponse struct {
-	// JWT authentication token
 	Token string `json:"token"`
 }

@@ -1,4 +1,4 @@
-# Stage 1: Build the application
+# Stage 1: Сборка приложения
 FROM golang:1.24.2 AS builder
 
 ENV GO111MODULE=on \
@@ -17,7 +17,7 @@ COPY internal/ internal/
 RUN swag init -g cmd/main.go && \
     go build -ldflags="-w -s" -o /user-order-api cmd/main.go
 
-# Stage 2: Final image
+# Шаг 2: Конечный образ
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
