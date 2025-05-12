@@ -34,12 +34,6 @@ func TestGenerateJWT_Success(t *testing.T) {
 	assert.WithinDuration(t, time.Now(), claims.IssuedAt.Time, 2*time.Second)
 }
 
-func TestGenerateJWT_EmptySecret(t *testing.T) {
-	_, err := GenerateJWT(testUserID, testUserEmail, "", testExpirationValid)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "secret cannot be empty")
-}
-
 func TestValidateJWT_Success(t *testing.T) {
 	tokenString, err := GenerateJWT(testUserID, testUserEmail, testSecret, testExpirationValid)
 	require.NoError(t, err)

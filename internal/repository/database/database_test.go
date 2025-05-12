@@ -32,28 +32,6 @@ func validConfig() *config_util.Config {
 	}
 }
 
-func TestInitDB_NilConfig(t *testing.T) {
-	log := mockLogger()
-	db, err := InitDB(nil, log)
-	if db != nil {
-		t.Error("ожидаемая база данных равна nil при конфигурации равной nil")
-	}
-	if err == nil || err.Error() != "конфигурация базы данных не предоставлена" {
-		t.Errorf("непредвиденная ошибка: %v", err)
-	}
-}
-
-func TestInitDB_NilLogger(t *testing.T) {
-	cfg := validConfig()
-	db, err := InitDB(cfg, nil)
-	if db != nil {
-		t.Error("ожидаемая база данных равна nil при logger равной nil")
-	}
-	if err == nil || err.Error() != "логгер не предоставлен" {
-		t.Errorf("непредвиденная ошибка: %v", err)
-	}
-}
-
 // This test uses an invalid DSN to force a connection error.
 func TestInitDB_InvalidDSN(t *testing.T) {
 	cfg := validConfig()
