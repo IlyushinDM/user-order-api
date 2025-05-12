@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// NewAppWithInitDB allows injecting a custom InitDB function for testing.
+// NewAppWithInitDB позволяет внедрить пользовательскую функцию InitDB для тестирования
 func NewAppWithInitDB(logger *logrus.Logger, config *config_util.Config, initDB func(cfg *config_util.Config, log *logrus.Logger) (*gorm.DB, error)) (*App, error) {
 	db, err := initDB(config, logger)
 	if err != nil {
